@@ -350,8 +350,17 @@
     </main>
 
     <!-- Bottom Footer Credits -->
-    <footer class="h-8 border-t flex-shrink-0 flex items-center justify-center px-4 text-[11px] font-mono" :class="isDark ? 'bg-zinc-950 border-zinc-900 text-zinc-500' : 'bg-white/90 border-zinc-200/80 text-zinc-500'">
-      <span>System developed by <a href="https://hoomansdigital.com" target="_blank" rel="noopener noreferrer" class="font-semibold underline hover:text-zinc-900 dark:hover:text-white transition">hoomansdigital.com</a></span>
+    <footer class="h-8 border-t flex-shrink-0 flex items-center justify-center px-4 text-[11px] font-mono" :class="isDark ? 'bg-zinc-950 border-zinc-900 text-zinc-400' : 'bg-white border-zinc-200 text-zinc-500'">
+      <span>System developed by 
+        <a 
+          href="https://hoomansdigital.com" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          :class="isDark ? 'text-zinc-200 hover:text-white border-zinc-700 hover:border-white' : 'text-zinc-700 hover:text-black border-zinc-300 hover:border-black'"
+          class="font-semibold border-b transition-colors pb-0.5 ml-1">
+          hoomansdigital.com
+        </a>
+      </span>
     </footer>
 
     <!-- Settings Modal Drawer -->
