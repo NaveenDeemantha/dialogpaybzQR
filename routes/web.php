@@ -5,7 +5,16 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
+use App\Http\Controllers\GenieBizController;
+
+Route::get('/', [GenieBizController::class, 'index'])->name('dynamic-qr');
+Route::get('/dynamic-qr', [GenieBizController::class, 'index']);
+
+// Genie Business API endpoints
+Route::post('/api/genie/fetch-company', [GenieBizController::class, 'fetchCompany'])->name('genie.fetch-company');
+Route::post('/api/genie/generate-payload', [GenieBizController::class, 'generatePayload'])->name('genie.generate-payload');
+
+Route::get('/welcome', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
