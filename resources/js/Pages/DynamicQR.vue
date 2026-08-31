@@ -1,44 +1,45 @@
 <template>
-  <div class="min-h-screen bg-black text-zinc-100 font-sans antialiased selection:bg-zinc-800 selection:text-white">
+  <div :class="isDark ? 'dark bg-black text-zinc-100 selection:bg-zinc-800 selection:text-white' : 'bg-zinc-50 text-zinc-900 selection:bg-zinc-200 selection:text-black'" class="min-h-screen font-sans antialiased transition-colors duration-150">
     
     <!-- Top Navigation -->
-    <header class="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur sticky top-0 z-40">
+    <header :class="isDark ? 'border-zinc-800/80 bg-zinc-950/80' : 'border-zinc-200/80 bg-white/80'" class="border-b backdrop-blur sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
         <!-- Brand / Title -->
         <div class="flex items-center gap-3">
-          <div class="h-7 w-7 rounded bg-white text-black font-mono font-bold flex items-center justify-center text-xs tracking-tighter">
+          <div :class="isDark ? 'bg-white text-black' : 'bg-black text-white'" class="h-7 w-7 rounded font-mono font-bold flex items-center justify-center text-xs tracking-tighter shadow-sm">
             DP
           </div>
           <div class="flex items-center gap-2">
-            <h1 class="text-sm font-semibold text-white tracking-tight">DialogPay Business</h1>
-            <span class="text-zinc-600 font-mono text-xs">/</span>
-            <span class="text-xs text-zinc-400 font-mono">Dynamic QR Terminal</span>
+            <h1 :class="isDark ? 'text-white' : 'text-zinc-900'" class="text-sm font-semibold tracking-tight">DialogPay Business</h1>
+            <span :class="isDark ? 'text-zinc-600' : 'text-zinc-400'" class="font-mono text-xs">/</span>
+            <span :class="isDark ? 'text-zinc-400' : 'text-zinc-500'" class="text-xs font-mono">Dynamic QR Terminal</span>
           </div>
         </div>
 
-        <!-- Environment Selector & Controls -->
-        <div class="flex items-center gap-3">
+        <!-- Controls: Environment Selector, Theme Toggle, Sample Loader -->
+        <div class="flex items-center gap-2.5">
+          
           <!-- Environment Tabs -->
-          <div class="inline-flex p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-medium">
+          <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-100 border-zinc-200'" class="inline-flex p-0.5 rounded-lg border text-xs font-medium">
             <button 
               type="button" 
               @click="switchEnvironment('uat')"
               :class="form.environment === 'uat' 
-                ? 'bg-zinc-800 text-white shadow-sm' 
-                : 'text-zinc-400 hover:text-zinc-200'"
+                ? (isDark ? 'bg-zinc-800 text-white shadow-sm' : 'bg-white text-zinc-900 shadow-sm border border-zinc-200/60') 
+                : (isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900')"
               class="px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400" v-if="form.environment === 'uat'"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500" v-if="form.environment === 'uat'"></span>
               UAT Sandbox
             </button>
             <button 
               type="button" 
               @click="switchEnvironment('live')"
               :class="form.environment === 'live' 
-                ? 'bg-zinc-800 text-white shadow-sm' 
-                : 'text-zinc-400 hover:text-zinc-200'"
+                ? (isDark ? 'bg-zinc-800 text-white shadow-sm' : 'bg-white text-zinc-900 shadow-sm border border-zinc-200/60') 
+                : (isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900')"
               class="px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" v-if="form.environment === 'live'"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" v-if="form.environment === 'live'"></span>
               Production Live
             </button>
           </div>
@@ -46,28 +47,40 @@
           <button 
             type="button" 
             @click="loadSampleDemo" 
-            class="text-xs text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 bg-zinc-900 px-2.5 py-1 rounded-lg transition">
+            :class="isDark ? 'text-zinc-400 hover:text-white border-zinc-800 bg-zinc-900' : 'text-zinc-600 hover:text-zinc-900 border-zinc-200 bg-white hover:bg-zinc-50 shadow-sm'"
+            class="text-xs border px-2.5 py-1 rounded-lg transition font-medium">
             Load Sample
+          </button>
+
+          <!-- Light / Dark Toggle -->
+          <button 
+            type="button" 
+            @click="toggleTheme" 
+            :class="isDark ? 'text-zinc-400 hover:text-white border-zinc-800 bg-zinc-900' : 'text-zinc-600 hover:text-zinc-900 border-zinc-200 bg-white shadow-sm'"
+            class="p-1.5 rounded-lg border text-xs transition"
+            :title="isDark ? 'Switch to Light theme' : 'Switch to Dark theme'">
+            <span v-if="isDark">☀️</span>
+            <span v-else>🌙</span>
           </button>
         </div>
 
       </div>
     </header>
 
-    <!-- Main Workspace -->
+    <!-- Main Content Workspace -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
-      <!-- Toast / Notification Bar -->
+      <!-- Toast Notification Bar -->
       <div v-if="notification.show" 
         :class="notification.type === 'error' 
-          ? 'bg-zinc-900 border-red-900/60 text-red-300' 
-          : 'bg-zinc-900 border-zinc-700 text-zinc-200'"
-        class="mb-6 border rounded-xl px-4 py-3 text-xs flex items-center justify-between font-mono">
+          ? (isDark ? 'bg-zinc-900 border-red-900 text-red-300' : 'bg-red-50 border-red-200 text-red-700') 
+          : (isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-200' : 'bg-zinc-100 border-zinc-300 text-zinc-800')"
+        class="mb-6 border rounded-xl px-4 py-3 text-xs flex items-center justify-between font-mono shadow-sm">
         <div class="flex items-center gap-2">
-          <span :class="notification.type === 'error' ? 'text-red-400' : 'text-zinc-400'">•</span>
+          <span :class="notification.type === 'error' ? 'text-red-500' : (isDark ? 'text-zinc-400' : 'text-zinc-600')">•</span>
           <span>{{ notification.message }}</span>
         </div>
-        <button @click="notification.show = false" class="text-zinc-500 hover:text-zinc-300 text-sm">✕</button>
+        <button @click="notification.show = false" :class="isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'" class="text-sm">✕</button>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -75,14 +88,14 @@
         <!-- LEFT COLUMN: Configurations & Input Form (7 cols) -->
         <div class="lg:col-span-7 space-y-6">
           
-          <!-- Section 1: API Configuration -->
-          <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-5 sm:p-6">
-            <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-800/80">
+          <!-- Section 1: API Authentication -->
+          <div :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'" class="border rounded-2xl p-5 sm:p-6">
+            <div :class="isDark ? 'border-zinc-800' : 'border-zinc-100'" class="flex items-center justify-between pb-4 mb-4 border-b">
               <div>
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">1. API Authentication</h2>
-                <p class="text-xs text-zinc-500 mt-0.5 font-mono">Target: {{ activeEndpointUrl }}/public/me</p>
+                <h2 :class="isDark ? 'text-zinc-300' : 'text-zinc-800'" class="text-xs font-semibold uppercase tracking-wider">1. API Authentication</h2>
+                <p :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-xs mt-0.5 font-mono">Target: {{ activeEndpointUrl }}/public/me</p>
               </div>
-              <span v-if="merchant.synced" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-emerald-400 border border-zinc-800">
+              <span v-if="merchant.synced" :class="isDark ? 'bg-zinc-900 text-emerald-400 border-zinc-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200'" class="text-[11px] font-mono px-2 py-0.5 rounded border">
                 Connected
               </span>
             </div>
@@ -90,11 +103,12 @@
             <div class="space-y-4">
               <div>
                 <div class="flex justify-between items-center mb-1.5">
-                  <label class="text-xs font-medium text-zinc-300">Authorization Key</label>
+                  <label :class="isDark ? 'text-zinc-300' : 'text-zinc-700'" class="text-xs font-medium">Authorization Key</label>
                   <button 
                     type="button" 
                     @click="showApiKey = !showApiKey" 
-                    class="text-[11px] text-zinc-500 hover:text-zinc-300 font-mono">
+                    :class="isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'"
+                    class="text-[11px] font-mono">
                     [{{ showApiKey ? 'Hide' : 'Reveal' }}]
                   </button>
                 </div>
@@ -102,19 +116,25 @@
                   :type="showApiKey ? 'text' : 'password'"
                   v-model="form.apiKey" 
                   placeholder="Paste your API key or token"
-                  class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3.5 py-2 text-xs font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition"
+                  :class="isDark 
+                    ? 'bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:border-zinc-600 focus:ring-zinc-600' 
+                    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:ring-zinc-900'"
+                  class="w-full border rounded-lg px-3.5 py-2 text-xs font-mono focus:outline-none focus:ring-1 transition"
                 />
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-zinc-300 mb-1.5">
-                  App ID <span class="text-zinc-600 font-normal">(Optional header: x-app-id)</span>
+                <label :class="isDark ? 'text-zinc-300' : 'text-zinc-700'" class="block text-xs font-medium mb-1.5">
+                  App ID <span :class="isDark ? 'text-zinc-600' : 'text-zinc-400'" class="font-normal">(Optional header: x-app-id)</span>
                 </label>
                 <input 
                   type="text" 
                   v-model="form.appId" 
                   placeholder="e.g. app_live_XXXXX or app_uat_XXXXX"
-                  class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3.5 py-2 text-xs font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition"
+                  :class="isDark 
+                    ? 'bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:border-zinc-600 focus:ring-zinc-600' 
+                    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:ring-zinc-900'"
+                  class="w-full border rounded-lg px-3.5 py-2 text-xs font-mono focus:outline-none focus:ring-1 transition"
                 />
               </div>
 
@@ -123,8 +143,11 @@
                   type="button"
                   @click="fetchCompanyDetails"
                   :disabled="loading.fetchingCompany || !form.apiKey"
-                  class="flex-1 bg-white hover:bg-zinc-200 text-black font-medium text-xs py-2 px-4 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2">
-                  <span v-if="loading.fetchingCompany" class="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                  :class="isDark 
+                    ? 'bg-white hover:bg-zinc-200 text-black' 
+                    : 'bg-zinc-900 hover:bg-black text-white shadow-sm'"
+                  class="flex-1 font-medium text-xs py-2 px-4 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2">
+                  <span v-if="loading.fetchingCompany" class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
                   <span>{{ loading.fetchingCompany ? 'Connecting to API...' : 'Fetch Merchant Profile' }}</span>
                 </button>
               </div>
@@ -132,99 +155,100 @@
           </div>
 
           <!-- Section 2: Merchant Metadata -->
-          <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-5 sm:p-6">
-            <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-800/80">
+          <div :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'" class="border rounded-2xl p-5 sm:p-6">
+            <div :class="isDark ? 'border-zinc-800' : 'border-zinc-100'" class="flex items-center justify-between pb-4 mb-4 border-b">
               <div>
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">2. Merchant Details</h2>
-                <p class="text-xs text-zinc-500 mt-0.5">Parameters encoded into EMVCo tags (02, 04, 26, 52, 59, 60)</p>
+                <h2 :class="isDark ? 'text-zinc-300' : 'text-zinc-800'" class="text-xs font-semibold uppercase tracking-wider">2. Merchant Details</h2>
+                <p :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-xs mt-0.5">Parameters encoded into EMVCo tags (02, 04, 26, 52, 59, 60)</p>
               </div>
               <button 
                 type="button" 
                 @click="showAdvancedMerchant = !showAdvancedMerchant"
-                class="text-[11px] text-zinc-400 hover:text-white font-mono underline">
+                :class="isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'"
+                class="text-[11px] font-mono underline">
                 {{ showAdvancedMerchant ? 'Collapse' : 'Manual Override' }}
               </button>
             </div>
 
             <!-- Profile Summary Grid -->
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-              <div class="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-3">
-                <span class="text-[10px] text-zinc-500 uppercase font-mono block">Merchant (Tag 59)</span>
-                <span class="font-medium text-zinc-200 truncate block mt-0.5" :title="merchant.merchantName">{{ merchant.merchantName || '—' }}</span>
+              <div :class="isDark ? 'bg-zinc-900/60 border-zinc-800/60' : 'bg-zinc-50 border-zinc-200/80'" class="border rounded-lg p-3">
+                <span :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-[10px] uppercase font-mono block">Merchant (Tag 59)</span>
+                <span :class="isDark ? 'text-zinc-200' : 'text-zinc-800'" class="font-medium truncate block mt-0.5" :title="merchant.merchantName">{{ merchant.merchantName || '—' }}</span>
               </div>
-              <div class="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-3">
-                <span class="text-[10px] text-zinc-500 uppercase font-mono block">City / Country (60, 58)</span>
-                <span class="font-medium text-zinc-200 truncate block mt-0.5">{{ merchant.merchantCity || 'Colombo' }}, {{ merchant.merchantCountryCode || 'LK' }}</span>
+              <div :class="isDark ? 'bg-zinc-900/60 border-zinc-800/60' : 'bg-zinc-50 border-zinc-200/80'" class="border rounded-lg p-3">
+                <span :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-[10px] uppercase font-mono block">City / Country (60, 58)</span>
+                <span :class="isDark ? 'text-zinc-200' : 'text-zinc-800'" class="font-medium truncate block mt-0.5">{{ merchant.merchantCity || 'Colombo' }}, {{ merchant.merchantCountryCode || 'LK' }}</span>
               </div>
-              <div class="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-3">
-                <span class="text-[10px] text-zinc-500 uppercase font-mono block">MCC (Tag 52)</span>
-                <span class="font-mono text-zinc-200 block mt-0.5">{{ merchant.merchantMccCode || '5300' }}</span>
+              <div :class="isDark ? 'bg-zinc-900/60 border-zinc-800/60' : 'bg-zinc-50 border-zinc-200/80'" class="border rounded-lg p-3">
+                <span :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-[10px] uppercase font-mono block">MCC (Tag 52)</span>
+                <span :class="isDark ? 'text-zinc-200' : 'text-zinc-800'" class="font-mono block mt-0.5">{{ merchant.merchantMccCode || '5300' }}</span>
               </div>
             </div>
 
             <!-- Rails Checklist -->
-            <div class="mt-4 pt-3 border-t border-zinc-800/60 flex flex-wrap items-center gap-2 text-[11px] font-mono">
-              <span class="text-zinc-500">Configured Rails:</span>
-              <span class="px-2 py-0.5 rounded border" :class="merchant.visaPan ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-transparent text-zinc-600 border-zinc-800'">
+            <div :class="isDark ? 'border-zinc-800/60' : 'border-zinc-100'" class="mt-4 pt-3 border-t flex flex-wrap items-center gap-2 text-[11px] font-mono">
+              <span :class="isDark ? 'text-zinc-500' : 'text-zinc-400'">Configured Rails:</span>
+              <span class="px-2 py-0.5 rounded border" :class="merchant.visaPan ? (isDark ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-zinc-100 text-zinc-800 border-zinc-300 font-medium') : (isDark ? 'text-zinc-600 border-zinc-800' : 'text-zinc-400 border-zinc-200')">
                 Visa {{ merchant.visaPan ? '✓' : '—' }}
               </span>
-              <span class="px-2 py-0.5 rounded border" :class="merchant.mastercardPan ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-transparent text-zinc-600 border-zinc-800'">
+              <span class="px-2 py-0.5 rounded border" :class="merchant.mastercardPan ? (isDark ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-zinc-100 text-zinc-800 border-zinc-300 font-medium') : (isDark ? 'text-zinc-600 border-zinc-800' : 'text-zinc-400 border-zinc-200')">
                 Mastercard {{ merchant.mastercardPan ? '✓' : '—' }}
               </span>
-              <span class="px-2 py-0.5 rounded border" :class="merchant.unionpayPan ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-transparent text-zinc-600 border-zinc-800'">
+              <span class="px-2 py-0.5 rounded border" :class="merchant.unionpayPan ? (isDark ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-zinc-100 text-zinc-800 border-zinc-300 font-medium') : (isDark ? 'text-zinc-600 border-zinc-800' : 'text-zinc-400 border-zinc-200')">
                 UnionPay {{ merchant.unionpayPan ? '✓' : '—' }}
               </span>
-              <span class="px-2 py-0.5 rounded border" :class="merchant.merchantGuidAcquirerId ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-transparent text-zinc-600 border-zinc-800'">
+              <span class="px-2 py-0.5 rounded border" :class="merchant.merchantGuidAcquirerId ? (isDark ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-zinc-100 text-zinc-800 border-zinc-300 font-medium') : (isDark ? 'text-zinc-600 border-zinc-800' : 'text-zinc-400 border-zinc-200')">
                 LANKAQR {{ merchant.merchantGuidAcquirerId ? '✓' : '—' }}
               </span>
             </div>
 
             <!-- Manual Override Inputs -->
-            <div v-if="showAdvancedMerchant" class="mt-4 pt-4 border-t border-zinc-800 space-y-3">
+            <div v-if="showAdvancedMerchant" :class="isDark ? 'border-zinc-800' : 'border-zinc-200'" class="mt-4 pt-4 border-t space-y-3">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label class="text-[11px] text-zinc-400 block mb-1">Tag 59: Merchant Name</label>
-                  <input v-model="merchant.merchantName" maxlength="25" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200" />
+                  <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 59: Merchant Name</label>
+                  <input v-model="merchant.merchantName" maxlength="25" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5" />
                 </div>
                 <div>
-                  <label class="text-[11px] text-zinc-400 block mb-1">Tag 60: Merchant City</label>
-                  <input v-model="merchant.merchantCity" maxlength="15" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200" />
+                  <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 60: Merchant City</label>
+                  <input v-model="merchant.merchantCity" maxlength="15" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5" />
                 </div>
                 <div>
-                  <label class="text-[11px] text-zinc-400 block mb-1">Tag 02/03: Visa PAN</label>
-                  <input v-model="merchant.visaPan" maxlength="16" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 font-mono" />
+                  <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 02/03: Visa PAN</label>
+                  <input v-model="merchant.visaPan" maxlength="16" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5 font-mono" />
                 </div>
                 <div>
-                  <label class="text-[11px] text-zinc-400 block mb-1">Tag 04/05: Mastercard PAN</label>
-                  <input v-model="merchant.mastercardPan" maxlength="16" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 font-mono" />
+                  <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 04/05: Mastercard PAN</label>
+                  <input v-model="merchant.mastercardPan" maxlength="16" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5 font-mono" />
                 </div>
                 <div>
-                  <label class="text-[11px] text-zinc-400 block mb-1">Tag 15/16: UnionPay PAN</label>
-                  <input v-model="merchant.unionpayPan" maxlength="31" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 font-mono" />
+                  <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 15/16: UnionPay PAN</label>
+                  <input v-model="merchant.unionpayPan" maxlength="31" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5 font-mono" />
                 </div>
                 <div>
-                  <label class="text-[11px] text-zinc-400 block mb-1">Tag 26: Acquirer / Merchant GUID</label>
-                  <input v-model="merchant.merchantGuidAcquirerId" maxlength="32" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 font-mono" />
+                  <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 26: Acquirer / Merchant GUID</label>
+                  <input v-model="merchant.merchantGuidAcquirerId" maxlength="32" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5 font-mono" />
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Section 3: Dynamic Transaction Details -->
-          <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-5 sm:p-6">
-            <div class="pb-4 mb-4 border-b border-zinc-800/80">
-              <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">3. Transaction Parameters</h2>
-              <p class="text-xs text-zinc-500 mt-0.5">Amount (Tag 54) and Reference Label (Tag 62.05)</p>
+          <div :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'" class="border rounded-2xl p-5 sm:p-6">
+            <div :class="isDark ? 'border-zinc-800' : 'border-zinc-100'" class="pb-4 mb-4 border-b">
+              <h2 :class="isDark ? 'text-zinc-300' : 'text-zinc-800'" class="text-xs font-semibold uppercase tracking-wider">3. Transaction Parameters</h2>
+              <p :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-xs mt-0.5">Amount (Tag 54) and Reference Label (Tag 62.05)</p>
             </div>
 
             <div class="space-y-4">
               <!-- Amount Entry -->
               <div>
-                <label class="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label :class="isDark ? 'text-zinc-300' : 'text-zinc-700'" class="block text-xs font-medium mb-1.5">
                   Payment Amount (LKR)
                 </label>
                 <div class="relative">
-                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500 font-mono text-sm">
+                  <span :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none font-mono text-sm">
                     LKR
                   </span>
                   <input 
@@ -233,25 +257,30 @@
                     min="0"
                     v-model="transaction.amount" 
                     placeholder="0.00"
-                    class="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-14 pr-4 py-2.5 text-xl font-mono font-semibold text-white placeholder-zinc-700 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition"
+                    :class="isDark 
+                      ? 'bg-zinc-900 border-zinc-800 text-white placeholder-zinc-700 focus:border-zinc-500 focus:ring-zinc-500' 
+                      : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-300 focus:border-zinc-900 focus:ring-zinc-900'"
+                    class="w-full border rounded-lg pl-14 pr-4 py-2.5 text-xl font-mono font-semibold focus:outline-none focus:ring-1 transition"
                   />
                 </div>
 
                 <!-- Quick Presets -->
                 <div class="flex items-center gap-1.5 mt-2 text-xs">
-                  <span class="text-[11px] text-zinc-500 font-mono mr-1">Presets:</span>
+                  <span :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-[11px] font-mono mr-1">Presets:</span>
                   <button 
                     v-for="amt in [100, 500, 1000, 2500, 5000]" 
                     :key="amt"
                     type="button" 
                     @click="addAmount(amt)"
-                    class="px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-[11px] font-mono transition">
+                    :class="isDark ? 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300' : 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700'"
+                    class="px-2 py-0.5 rounded border text-[11px] font-mono transition">
                     +{{ amt }}
                   </button>
                   <button 
                     type="button" 
                     @click="transaction.amount = ''"
-                    class="px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-500 hover:text-zinc-300 text-[11px] font-mono ml-auto">
+                    :class="isDark ? 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-500 hover:text-zinc-300' : 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-500 hover:text-zinc-800'"
+                    class="px-2 py-0.5 rounded border text-[11px] font-mono ml-auto">
                     Clear
                   </button>
                 </div>
@@ -260,11 +289,12 @@
               <!-- Reference ID -->
               <div>
                 <div class="flex justify-between items-center mb-1.5">
-                  <label class="text-xs font-medium text-zinc-300">Reference / Invoice ID (Tag 62.05)</label>
+                  <label :class="isDark ? 'text-zinc-300' : 'text-zinc-700'" class="text-xs font-medium">Reference / Invoice ID (Tag 62.05)</label>
                   <button 
                     type="button" 
                     @click="generateRandomReference" 
-                    class="text-[11px] text-zinc-400 hover:text-white font-mono underline">
+                    :class="isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-zinc-900'"
+                    class="text-[11px] font-mono underline">
                     Auto-Generate
                   </button>
                 </div>
@@ -273,23 +303,28 @@
                   v-model="transaction.referenceLabel" 
                   maxlength="25"
                   placeholder="e.g. INV-89201"
-                  class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3.5 py-2 text-xs font-mono text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition"
+                  :class="isDark 
+                    ? 'bg-zinc-900 border-zinc-800 text-zinc-200 placeholder-zinc-700 focus:border-zinc-500 focus:ring-zinc-500' 
+                    : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-zinc-900 focus:ring-zinc-900'"
+                  class="w-full border rounded-lg px-3.5 py-2 text-xs font-mono focus:outline-none focus:ring-1 transition"
                 />
               </div>
 
               <!-- QR Mode (Dynamic vs Static) -->
-              <div class="flex items-center justify-between pt-3 border-t border-zinc-800/60">
+              <div :class="isDark ? 'border-zinc-800/60' : 'border-zinc-100'" class="flex items-center justify-between pt-3 border-t">
                 <div>
-                  <div class="text-xs font-medium text-zinc-200">Point of Initiation</div>
-                  <div class="text-[11px] text-zinc-500 font-mono">
+                  <div :class="isDark ? 'text-zinc-200' : 'text-zinc-800'" class="text-xs font-medium">Point of Initiation</div>
+                  <div :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-[11px] font-mono">
                     {{ transaction.isDynamic ? 'Tag 01 = 12 (Dynamic QR with fixed amount)' : 'Tag 01 = 11 (Static QR, customer enters amount)' }}
                   </div>
                 </div>
                 <button 
                   type="button"
                   @click="transaction.isDynamic = !transaction.isDynamic"
-                  :class="transaction.isDynamic ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400'"
-                  class="px-3 py-1 rounded text-xs font-medium border border-zinc-700 transition">
+                  :class="transaction.isDynamic 
+                    ? (isDark ? 'bg-white text-black border-white' : 'bg-zinc-900 text-white border-zinc-900') 
+                    : (isDark ? 'bg-zinc-800 text-zinc-400 border-zinc-700' : 'bg-zinc-100 text-zinc-600 border-zinc-200')"
+                  class="px-3 py-1 rounded text-xs font-medium border transition">
                   {{ transaction.isDynamic ? 'Dynamic' : 'Static' }}
                 </button>
               </div>
@@ -302,18 +337,18 @@
         <div class="lg:col-span-5 space-y-6">
           
           <!-- Terminal / POS Standee Card -->
-          <div id="printableQrStandee" class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 flex flex-col items-center text-center">
+          <div id="printableQrStandee" :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-zinc-200 shadow-md'" class="border rounded-2xl p-6 flex flex-col items-center text-center">
             
             <!-- Terminal Header -->
-            <div class="w-full pb-3 mb-4 border-b border-zinc-800 flex justify-between items-center">
-              <span class="text-[10px] font-mono uppercase tracking-widest text-zinc-400">EMVCo LANKAQR</span>
-              <span class="text-[10px] font-mono text-zinc-500 uppercase">{{ form.environment }}</span>
+            <div :class="isDark ? 'border-zinc-800 text-zinc-400' : 'border-zinc-100 text-zinc-500'" class="w-full pb-3 mb-4 border-b flex justify-between items-center">
+              <span class="text-[10px] font-mono uppercase tracking-widest font-semibold">EMVCo LANKAQR</span>
+              <span class="text-[10px] font-mono uppercase">{{ form.environment }}</span>
             </div>
 
             <!-- Merchant Title -->
             <div class="mb-4">
-              <div class="text-sm font-semibold text-zinc-100 tracking-tight">{{ merchant.merchantName || 'Genie Business Merchant' }}</div>
-              <div class="text-xs text-zinc-500">{{ merchant.merchantCity || 'Colombo' }}, LK</div>
+              <div :class="isDark ? 'text-zinc-100' : 'text-zinc-900'" class="text-sm font-semibold tracking-tight">{{ merchant.merchantName || 'Genie Business Merchant' }}</div>
+              <div :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-xs">{{ merchant.merchantCity || 'Colombo' }}, LK</div>
             </div>
 
             <!-- High-Contrast Clean QR Code Box -->
@@ -328,18 +363,18 @@
             </div>
 
             <!-- Amount Display -->
-            <div class="mt-4 w-full bg-zinc-900 border border-zinc-800/80 rounded-xl p-3.5">
-              <div class="text-[10px] font-mono text-zinc-500 uppercase">Amount Due</div>
-              <div class="text-2xl font-bold font-mono text-white mt-0.5">
+            <div :class="isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-zinc-50 border-zinc-200'" class="mt-4 w-full border rounded-xl p-3.5">
+              <div :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-[10px] font-mono uppercase">Amount Due</div>
+              <div :class="isDark ? 'text-white' : 'text-zinc-900'" class="text-2xl font-bold font-mono mt-0.5">
                 {{ formattedDisplayAmount }}
               </div>
-              <div v-if="transaction.referenceLabel" class="text-xs text-zinc-400 font-mono mt-1">
+              <div v-if="transaction.referenceLabel" :class="isDark ? 'text-zinc-400' : 'text-zinc-500'" class="text-xs font-mono mt-1">
                 Ref: {{ transaction.referenceLabel }}
               </div>
             </div>
 
             <!-- Supported Rails Bar -->
-            <div class="mt-3 w-full text-[10px] font-mono text-zinc-500 flex justify-center gap-3">
+            <div :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="mt-3 w-full text-[10px] font-mono flex justify-center gap-3">
               <span>VISA</span>
               <span>•</span>
               <span>MASTERCARD</span>
@@ -354,44 +389,52 @@
               <button 
                 type="button" 
                 @click="downloadQrImage"
-                class="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-medium py-2 px-3 rounded-lg transition">
+                :class="isDark 
+                  ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border-zinc-800' 
+                  : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200'"
+                class="border text-xs font-medium py-2 px-3 rounded-lg transition">
                 Download PNG
               </button>
 
               <button 
                 type="button" 
                 @click="printStandee"
-                class="bg-white hover:bg-zinc-200 text-black text-xs font-medium py-2 px-3 rounded-lg transition">
+                :class="isDark 
+                  ? 'bg-white hover:bg-zinc-200 text-black' 
+                  : 'bg-zinc-900 hover:bg-black text-white shadow-sm'"
+                class="text-xs font-medium py-2 px-3 rounded-lg transition">
                 Print Standee
               </button>
             </div>
           </div>
 
           <!-- EMVCo Payload Inspector -->
-          <div class="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-5">
+          <div :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'" class="border rounded-2xl p-5">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold uppercase tracking-wider text-zinc-300">Payload String</span>
-                <span class="text-[10px] font-mono text-zinc-500">({{ qrPayload.length }} chars)</span>
+                <span :class="isDark ? 'text-zinc-300' : 'text-zinc-800'" class="text-xs font-semibold uppercase tracking-wider">Payload String</span>
+                <span :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-[10px] font-mono">({{ qrPayload.length }} chars)</span>
               </div>
               <button 
                 type="button" 
                 @click="copyPayload" 
-                class="text-xs font-mono text-zinc-400 hover:text-white underline">
+                :class="isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'"
+                class="text-xs font-mono underline">
                 {{ copied ? 'Copied' : 'Copy' }}
               </button>
             </div>
 
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-[11px] font-mono text-zinc-300 break-all select-all leading-relaxed max-h-24 overflow-y-auto">
+            <div :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-300' : 'bg-zinc-50 border-zinc-200 text-zinc-700'" class="border rounded-lg p-3 text-[11px] font-mono break-all select-all leading-relaxed max-h-24 overflow-y-auto">
               {{ qrPayload }}
             </div>
 
             <!-- Tag Breakdown Toggle -->
-            <div class="mt-3 pt-3 border-t border-zinc-800/80">
+            <div :class="isDark ? 'border-zinc-800/80' : 'border-zinc-100'" class="mt-3 pt-3 border-t">
               <button 
                 type="button" 
                 @click="showTagBreakdown = !showTagBreakdown"
-                class="w-full flex items-center justify-between text-xs text-zinc-400 hover:text-zinc-200 font-mono">
+                :class="isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-800'"
+                class="w-full flex items-center justify-between text-xs font-mono">
                 <span>Decoded Tag Structure ({{ decodedTags.length }} Tags)</span>
                 <span>{{ showTagBreakdown ? '▲' : '▼' }}</span>
               </button>
@@ -400,18 +443,19 @@
                 <div 
                   v-for="tag in decodedTags" 
                   :key="tag.tag"
-                  class="bg-zinc-900 border border-zinc-800/60 rounded p-2 text-[11px]">
-                  <div class="flex justify-between text-zinc-400 mb-0.5">
-                    <span class="text-white font-semibold">Tag {{ tag.tag }}: {{ tag.name }}</span>
-                    <span class="text-zinc-500">Len: {{ tag.length }}</span>
+                  :class="isDark ? 'bg-zinc-900 border-zinc-800/60' : 'bg-zinc-50 border-zinc-200'"
+                  class="border rounded p-2 text-[11px]">
+                  <div :class="isDark ? 'text-zinc-400' : 'text-zinc-500'" class="flex justify-between mb-0.5">
+                    <span :class="isDark ? 'text-white' : 'text-zinc-900'" class="font-semibold">Tag {{ tag.tag }}: {{ tag.name }}</span>
+                    <span>Len: {{ tag.length }}</span>
                   </div>
-                  <div class="text-zinc-300 break-all">{{ tag.value }}</div>
+                  <div :class="isDark ? 'text-zinc-300' : 'text-zinc-700'" class="break-all">{{ tag.value }}</div>
 
                   <!-- Sub tags -->
-                  <div v-if="tag.subTags && tag.subTags.length" class="mt-1.5 pl-2 border-l border-zinc-700 space-y-1">
-                    <div v-for="sub in tag.subTags" :key="sub.tag" class="text-[10px] text-zinc-400">
+                  <div v-if="tag.subTags && tag.subTags.length" :class="isDark ? 'border-zinc-700' : 'border-zinc-300'" class="mt-1.5 pl-2 border-l space-y-1">
+                    <div v-for="sub in tag.subTags" :key="sub.tag" :class="isDark ? 'text-zinc-400' : 'text-zinc-500'" class="text-[10px]">
                       <span>Sub-tag {{ sub.tag }} ({{ sub.name }}):</span>
-                      <span class="text-zinc-200 ml-1">{{ sub.value }}</span>
+                      <span :class="isDark ? 'text-zinc-200' : 'text-zinc-900'" class="ml-1">{{ sub.value }}</span>
                     </div>
                   </div>
                 </div>
@@ -450,6 +494,14 @@ const props = defineProps({
     ],
   },
 });
+
+// Theme state: default to Light theme
+const isDark = ref(false);
+
+function toggleTheme() {
+  isDark.value = !isDark.value;
+  localStorage.setItem('dp_theme', isDark.value ? 'dark' : 'light');
+}
 
 // State
 const qrCodeRef = ref(null);
@@ -650,6 +702,13 @@ function printStandee() {
 }
 
 onMounted(() => {
+  const savedTheme = localStorage.getItem('dp_theme');
+  if (savedTheme) {
+    isDark.value = savedTheme === 'dark';
+  } else {
+    isDark.value = false; // Default to Light theme
+  }
+
   const savedKey = localStorage.getItem(`genie_apiKey_${form.environment}`);
   const savedAppId = localStorage.getItem(`genie_appId_${form.environment}`);
   if (savedKey) form.apiKey = savedKey;
