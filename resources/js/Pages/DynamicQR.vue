@@ -49,7 +49,7 @@
             @click="loadSampleDemo" 
             :class="isDark ? 'text-zinc-400 hover:text-white border-zinc-800 bg-zinc-900' : 'text-zinc-600 hover:text-zinc-900 border-zinc-200 bg-white hover:bg-zinc-50 shadow-sm'"
             class="text-xs border px-2.5 py-1 rounded-lg transition font-medium">
-            Load Sample
+            Load Doc Sample
           </button>
 
           <!-- Light / Dark Toggle -->
@@ -70,6 +70,27 @@
     <!-- Main Content Workspace -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
+      <!-- Guidance / Scanner Compatibility Notice -->
+      <div :class="form.environment === 'uat' 
+        ? (isDark ? 'bg-amber-950/40 border-amber-900/50 text-amber-200' : 'bg-amber-50/80 border-amber-200 text-amber-900')
+        : (isDark ? 'bg-emerald-950/40 border-emerald-900/50 text-emerald-200' : 'bg-emerald-50/80 border-emerald-200 text-emerald-900')"
+        class="mb-6 border rounded-xl p-4 text-xs flex items-start gap-3 shadow-sm">
+        <div class="mt-0.5 font-bold">ℹ️</div>
+        <div>
+          <div class="font-semibold mb-0.5">
+            {{ form.environment === 'uat' ? 'UAT Sandbox Mode Active' : 'Production Live Mode Active' }}
+          </div>
+          <div class="opacity-90 leading-relaxed">
+            <span v-if="form.environment === 'uat'">
+              UAT test merchant PANs and test GUIDs are only recognized by <strong>Genie UAT / Stage test apps</strong> or general EMVCo QR analyzers. Commercial consumer banking apps on App Store / Play Store connect to the Live central switch and will report test sandbox IDs as invalid.
+            </span>
+            <span v-else>
+              Production Live QRs connect to real merchant accounts and can be scanned directly with any Sri Lankan fintech or banking app (Genie, FriMi, Flash, Commercial Bank Q+, Sampath WePay, etc.).
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- Toast Notification Bar -->
       <div v-if="notification.show" 
         :class="notification.type === 'error' 
@@ -230,6 +251,10 @@
                   <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 26: Acquirer / Merchant GUID</label>
                   <input v-model="merchant.merchantGuidAcquirerId" maxlength="32" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5 font-mono" />
                 </div>
+                <div>
+                  <label :class="isDark ? 'text-zinc-400' : 'text-zinc-600'" class="text-[11px] block mb-1">Tag 62.07: Terminal ID</label>
+                  <input v-model="merchant.qrTerminalId" maxlength="25" :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'" class="w-full border rounded px-2.5 py-1.5 font-mono" />
+                </div>
               </div>
             </div>
           </div>
@@ -325,7 +350,7 @@
                     ? (isDark ? 'bg-white text-black border-white' : 'bg-zinc-900 text-white border-zinc-900') 
                     : (isDark ? 'bg-zinc-800 text-zinc-400 border-zinc-700' : 'bg-zinc-100 text-zinc-600 border-zinc-200')"
                   class="px-3 py-1 rounded text-xs font-medium border transition">
-                  {{ transaction.isDynamic ? 'Dynamic' : 'Static' }}
+                  {{ transaction.isDynamic ? 'Dynamic (12)' : 'Static (11)' }}
                 </button>
               </div>
             </div>
@@ -351,12 +376,13 @@
               <div :class="isDark ? 'text-zinc-500' : 'text-zinc-400'" class="text-xs">{{ merchant.merchantCity || 'Colombo' }}, LK</div>
             </div>
 
-            <!-- High-Contrast Clean QR Code Box -->
-            <div class="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm inline-block">
+            <!-- High-Contrast Clean QR Code Box (with quiet zone padding) -->
+            <div class="bg-white p-4 rounded-xl border border-zinc-300 shadow-sm inline-block">
               <qrcode-vue
                 ref="qrCodeRef"
                 :value="qrPayload"
-                :size="220"
+                :size="240"
+                :margin="2"
                 level="M"
                 render-as="canvas"
               />
@@ -539,6 +565,7 @@ const merchant = reactive({
   mastercardPan: '2227132220026797',
   unionpayPan: '3950014400520446111111722002679',
   merchantGuidAcquirerId: '00281699500162022121311121661165',
+  qrTerminalId: '',
 });
 
 // Transaction state
@@ -556,7 +583,7 @@ const activeEndpointUrl = computed(() => {
 // Display Amount formatted
 const formattedDisplayAmount = computed(() => {
   const num = parseFloat(transaction.amount);
-  if (isNaN(num) || num <= 0) return 'Variable Amount';
+  if (isNaN(num) || num <= 0) return 'Variable Amount (Static)';
   return `LKR ${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 });
 
@@ -576,6 +603,7 @@ const qrData = computed(() => {
     mastercardPan: merchant.mastercardPan,
     unionpayPan: merchant.unionpayPan,
     merchantGuidAcquirerId: merchant.merchantGuidAcquirerId,
+    qrTerminalId: merchant.qrTerminalId,
   });
 });
 
@@ -644,6 +672,7 @@ async function fetchCompanyDetails() {
       merchant.mastercardPan = staticQr.mastercardPan || '';
       merchant.unionpayPan = staticQr.unionpayPan || '';
       merchant.merchantGuidAcquirerId = staticQr.merchantGuidAcquirerId || staticQr.merchantAcquiringBankId || '';
+      merchant.qrTerminalId = staticQr.qrTerminalId || '';
       merchant.synced = true;
 
       notify(`Loaded merchant "${merchant.merchantName}" from ${form.environment.toUpperCase()} API`, 'success');
@@ -658,7 +687,7 @@ async function fetchCompanyDetails() {
   }
 }
 
-// Load sample demo merchant
+// Load sample demo merchant matching the DialogPay EMVCo spec page 6
 function loadSampleDemo() {
   merchant.merchantName = 'Genie Integrations';
   merchant.merchantCity = 'Colombo 03';
@@ -669,10 +698,11 @@ function loadSampleDemo() {
   merchant.mastercardPan = '2227132220026797';
   merchant.unionpayPan = '3950014400520446111111722002679';
   merchant.merchantGuidAcquirerId = '00281699500162022121311121661165';
+  merchant.qrTerminalId = '';
   merchant.synced = true;
   transaction.amount = '1500.00';
-  transaction.referenceLabel = 'INV-2026-8890';
-  notify('Loaded sample merchant parameters', 'success');
+  transaction.referenceLabel = '00000000000';
+  notify('Loaded sample merchant parameters from official DialogPay specification', 'success');
 }
 
 // Copy EMVCo Payload
@@ -706,7 +736,7 @@ onMounted(() => {
   if (savedTheme) {
     isDark.value = savedTheme === 'dark';
   } else {
-    isDark.value = false; // Default to Light theme
+    isDark.value = false;
   }
 
   const savedKey = localStorage.getItem(`genie_apiKey_${form.environment}`);

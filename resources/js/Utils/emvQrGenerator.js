@@ -1,6 +1,6 @@
 /**
  * EMVCo QR Code Generator & Parser (ISO/IEC 13239 CRC-16)
- * Compliant with Genie Business / DialogPay EMVCo QR Specifications
+ * Compliant with Genie Business / DialogPay / LANKAQR EMVCo QR Specifications
  */
 
 /**
@@ -60,57 +60,66 @@ export function generateEmvQrPayload(params) {
     elements.push(formatTlv('01', poi));
 
     // Tag 02: Visa Active (16 chars)
-    if (params.visaPan) {
-        elements.push(formatTlv('02', String(params.visaPan).slice(0, 16)));
+    if (params.visaPan && String(params.visaPan).trim() !== '') {
+        elements.push(formatTlv('02', String(params.visaPan).trim().slice(0, 16)));
     }
 
     // Tag 03: Visa Reserved (16 chars)
-    if (params.visaReserved) {
-        elements.push(formatTlv('03', String(params.visaReserved).slice(0, 16)));
-    } else if (params.visaPan) {
-        elements.push(formatTlv('03', String(params.visaPan).slice(0, 16)));
+    if (params.visaReserved && String(params.visaReserved).trim() !== '') {
+        elements.push(formatTlv('03', String(params.visaReserved).trim().slice(0, 16)));
+    } else if (params.visaPan && String(params.visaPan).trim() !== '') {
+        elements.push(formatTlv('03', String(params.visaPan).trim().slice(0, 16)));
     }
 
     // Tag 04: Mastercard Active (16 chars)
-    if (params.mastercardPan) {
-        elements.push(formatTlv('04', String(params.mastercardPan).slice(0, 16)));
+    if (params.mastercardPan && String(params.mastercardPan).trim() !== '') {
+        elements.push(formatTlv('04', String(params.mastercardPan).trim().slice(0, 16)));
     }
 
     // Tag 05: Mastercard Reserved (16 chars)
-    if (params.mastercardReserved) {
-        elements.push(formatTlv('05', String(params.mastercardReserved).slice(0, 16)));
-    } else if (params.mastercardPan) {
-        elements.push(formatTlv('05', String(params.mastercardPan).slice(0, 16)));
+    if (params.mastercardReserved && String(params.mastercardReserved).trim() !== '') {
+        elements.push(formatTlv('05', String(params.mastercardReserved).trim().slice(0, 16)));
+    } else if (params.mastercardPan && String(params.mastercardPan).trim() !== '') {
+        elements.push(formatTlv('05', String(params.mastercardPan).trim().slice(0, 16)));
     }
 
     // Tag 15: UnionPay Active (31 chars)
-    if (params.unionpayPan) {
-        elements.push(formatTlv('15', String(params.unionpayPan).slice(0, 31)));
+    if (params.unionpayPan && String(params.unionpayPan).trim() !== '') {
+        elements.push(formatTlv('15', String(params.unionpayPan).trim().slice(0, 31)));
     }
 
     // Tag 16: UnionPay Reserved (31 chars)
-    if (params.unionpayReserved) {
-        elements.push(formatTlv('16', String(params.unionpayReserved).slice(0, 31)));
-    } else if (params.unionpayPan) {
-        elements.push(formatTlv('16', String(params.unionpayPan).slice(0, 31)));
+    if (params.unionpayReserved && String(params.unionpayReserved).trim() !== '') {
+        elements.push(formatTlv('16', String(params.unionpayReserved).trim().slice(0, 31)));
+    } else if (params.unionpayPan && String(params.unionpayPan).trim() !== '') {
+        elements.push(formatTlv('16', String(params.unionpayPan).trim().slice(0, 31)));
     }
 
-    // Tag 26: Globally unique identifier data object / Merchant Account Info (32 chars)
-    const acquirerGuid = params.merchantGuidAcquirerId || params.merchantAcquiringBankId;
-    if (acquirerGuid) {
-        elements.push(formatTlv('26', String(acquirerGuid).slice(0, 32)));
+    // Tag 26: Globally unique identifier data object / Merchant Account Info (Length: 32)
+    // Note: In LANKAQR/EMVCo, Tag 26 contains Sub-tag 00 (GUID).
+    const rawGuid = params.merchantGuidAcquirerId || params.merchantAcquiringBankId;
+    if (rawGuid && String(rawGuid).trim() !== '') {
+        const guidStr = String(rawGuid).trim();
+        let tag26Val = '';
+        if (guidStr.startsWith('00') && guidStr.length >= 30) {
+            tag26Val = guidStr;
+        } else {
+            // Wrap in Sub-tag 00
+            tag26Val = formatTlv('00', guidStr);
+        }
+        elements.push(formatTlv('26', tag26Val));
     }
 
     // Tag 52: Merchant Category Code (MCC, 4 chars e.g. 5300)
-    const mcc = params.merchantMccCode ? String(params.merchantMccCode).padStart(4, '0') : '5300';
+    const mcc = params.merchantMccCode ? String(params.merchantMccCode).trim().padStart(4, '0') : '5300';
     elements.push(formatTlv('52', mcc.slice(0, 4)));
 
     // Tag 53: Transaction Currency (3 chars, '144' for LKR)
     let currency = params.trxCurrencyCode || params.currency || '144';
-    if (String(currency).toUpperCase() === 'LKR') currency = '144';
-    elements.push(formatTlv('53', String(currency).padStart(3, '0').slice(0, 3)));
+    if (String(currency).toUpperCase().trim() === 'LKR') currency = '144';
+    elements.push(formatTlv('53', String(currency).trim().padStart(3, '0').slice(0, 3)));
 
-    // Tag 54: Transaction Amount (Required for Dynamic QR)
+    // Tag 54: Transaction Amount (Required for Dynamic QR '12')
     if (params.amount !== undefined && params.amount !== null && String(params.amount).trim() !== '') {
         const num = parseFloat(params.amount);
         if (!isNaN(num) && num > 0) {
@@ -120,22 +129,28 @@ export function generateEmvQrPayload(params) {
     }
 
     // Tag 58: Country Code (2 chars, 'LK')
-    const country = (params.merchantCountryCode || params.country || 'LK').toUpperCase().slice(0, 2);
+    const country = (params.merchantCountryCode || params.country || 'LK').toUpperCase().trim().slice(0, 2);
     elements.push(formatTlv('58', country));
 
     // Tag 59: Merchant Name (Up to 25 chars)
-    const name = (params.merchantName || params.tradingName || 'Genie Merchant').slice(0, 25);
+    const name = String(params.merchantName || params.tradingName || 'Genie Merchant').trim().slice(0, 25);
     elements.push(formatTlv('59', name));
 
     // Tag 60: Merchant City (Up to 15 chars)
-    const city = (params.merchantCity || 'Colombo').slice(0, 15);
+    const city = String(params.merchantCity || 'Colombo').trim().slice(0, 15);
     elements.push(formatTlv('60', city));
 
     // Tag 62: Additional Data Field Template
     // Sub-tag 05: Reference Label (Up to 25 chars)
-    const ref = params.referenceLabel || '00000000000';
-    const subTag05 = formatTlv('05', String(ref).slice(0, 25));
-    elements.push(formatTlv('62', subTag05));
+    const subTags62 = [];
+    const ref = params.referenceLabel ? String(params.referenceLabel).trim() : '00000000000';
+    subTags62.push(formatTlv('05', ref.slice(0, 25)));
+
+    if (params.qrTerminalId && String(params.qrTerminalId).trim() !== '') {
+        subTags62.push(formatTlv('07', String(params.qrTerminalId).trim().slice(0, 25)));
+    }
+
+    elements.push(formatTlv('62', subTags62.join('')));
 
     // Assemble payload without CRC and append '6304'
     const payloadWithoutCrc = elements.join('') + '6304';
@@ -168,7 +183,7 @@ export function parseEmvQrPayload(payload) {
         '05': { name: 'Mastercard Reserved PAN', desc: 'Mastercard Reserved Identifier' },
         '15': { name: 'UnionPay Active PAN', desc: 'UnionPay Merchant Identifier' },
         '16': { name: 'UnionPay Reserved PAN', desc: 'UnionPay Reserved Identifier' },
-        '26': { name: 'Acquirer / Merchant GUID', desc: 'Globally Unique Identifier' },
+        '26': { name: 'Merchant Account Info / Acquirer GUID', desc: 'Globally Unique Identifier (LANKAQR)' },
         '52': { name: 'Merchant Category Code', desc: 'MCC Classification (ISO 18245)' },
         '53': { name: 'Transaction Currency', desc: 'ISO 4217 Currency (144 = LKR)' },
         '54': { name: 'Transaction Amount', desc: 'Payment Amount' },
@@ -180,6 +195,7 @@ export function parseEmvQrPayload(payload) {
     };
 
     const subTagNames = {
+        '00': 'Globally Unique Identifier (GUID)',
         '01': 'Bill Number',
         '02': 'Mobile Number',
         '03': 'Store Label',
@@ -213,6 +229,25 @@ export function parseEmvQrPayload(payload) {
             value,
             subTags: [],
         };
+
+        if (tag === '26') {
+            let subI = 0;
+            while (subI + 4 <= value.length) {
+                const sTag = value.substring(subI, subI + 2);
+                const sLen = parseInt(value.substring(subI + 2, subI + 4), 10);
+                if (isNaN(sLen)) break;
+
+                const sVal = value.substring(subI + 4, subI + 4 + sLen);
+                subI += 4 + sLen;
+
+                entry.subTags.push({
+                    tag: sTag,
+                    name: subTagNames[sTag] || `Sub-tag ${sTag}`,
+                    length: sLen,
+                    value: sVal,
+                });
+            }
+        }
 
         if (tag === '62') {
             let subI = 0;
