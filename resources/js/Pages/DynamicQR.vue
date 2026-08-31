@@ -349,6 +349,11 @@
       </div>
     </main>
 
+    <!-- Bottom Footer Credits -->
+    <footer class="h-8 border-t flex-shrink-0 flex items-center justify-center px-4 text-[11px] font-mono" :class="isDark ? 'bg-zinc-950 border-zinc-900 text-zinc-500' : 'bg-white/90 border-zinc-200/80 text-zinc-500'">
+      <span>System developed by <a href="https://hoomansdigital.com" target="_blank" rel="noopener noreferrer" class="font-semibold underline hover:text-zinc-900 dark:hover:text-white transition">hoomansdigital.com</a></span>
+    </footer>
+
     <!-- Settings Modal Drawer -->
     <div v-if="showSettingsDrawer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div :class="isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'" class="border rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
