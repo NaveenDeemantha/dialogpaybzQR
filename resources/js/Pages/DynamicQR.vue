@@ -111,17 +111,17 @@
               </div>
             </div>
 
-            <div :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-50 border-zinc-200'" class="border rounded-xl py-2.5 px-3 text-center">
+            <div :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-50 border-zinc-200'" class="border rounded-xl py-2.5 px-4 text-center">
               <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Total Charge</div>
-              <div class="flex items-baseline justify-center gap-1.5 mt-0.5">
-                <span class="text-sm font-mono font-medium text-zinc-400">Rs.</span>
+              <div class="flex items-center justify-center gap-2 mt-0.5 w-full">
+                <span class="text-base font-mono font-semibold text-zinc-400 flex-shrink-0">Rs.</span>
                 <input 
-                  type="number" 
-                  step="0.01" 
-                  min="1"
+                  type="text" 
+                  inputmode="decimal"
                   v-model="transaction.amount" 
-                  class="bg-transparent text-2xl sm:text-3xl font-bold font-mono text-center focus:outline-none w-36 max-w-full"
-                  :class="isDark ? 'text-white' : 'text-zinc-900'"
+                  placeholder="0.00"
+                  class="bg-transparent text-2xl sm:text-3xl font-bold font-mono text-center focus:outline-none w-full border-none p-0 tracking-tight"
+                  :class="isDark ? 'text-white placeholder-zinc-700' : 'text-zinc-900 placeholder-zinc-300'"
                 />
               </div>
             </div>
