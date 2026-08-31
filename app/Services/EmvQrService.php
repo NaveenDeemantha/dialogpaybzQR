@@ -17,8 +17,8 @@ class EmvQrService
         // 00: Payload Format Indicator (Mandatory: '01')
         $tags[] = $this->formatTlv('00', '01');
 
-        // 01: Point of Initiation Method ('12' for Dynamic QR, '11' for Static QR)
-        $pointOfInitiation = $params['pointOfInitiationMethod'] ?? (isset($params['isDynamic']) && !$params['isDynamic'] ? '11' : '12');
+        // 01: Point of Initiation Method ('11' is default as per DialogPay official spec sample, '12' for Dynamic)
+        $pointOfInitiation = $params['pointOfInitiationMethod'] ?? '11';
         $tags[] = $this->formatTlv('01', $pointOfInitiation);
 
         // 02: Visa Active (Length: 16)
@@ -26,7 +26,7 @@ class EmvQrService
             $tags[] = $this->formatTlv('02', substr(trim($params['visaPan']), 0, 16));
         }
 
-        // 03: Visa Reserved (Length: 16)
+        // 03: Visa Reserved (Length: 16) - Must match 02 if not separately provided
         if (!empty($params['visaReserved'])) {
             $tags[] = $this->formatTlv('03', substr(trim($params['visaReserved']), 0, 16));
         } elseif (!empty($params['visaPan'])) {
@@ -38,7 +38,7 @@ class EmvQrService
             $tags[] = $this->formatTlv('04', substr(trim($params['mastercardPan']), 0, 16));
         }
 
-        // 05: Mastercard Reserved (Length: 16)
+        // 05: Mastercard Reserved (Length: 16) - Must match 04 if not separately provided
         if (!empty($params['mastercardReserved'])) {
             $tags[] = $this->formatTlv('05', substr(trim($params['mastercardReserved']), 0, 16));
         } elseif (!empty($params['mastercardPan'])) {
@@ -50,7 +50,7 @@ class EmvQrService
             $tags[] = $this->formatTlv('15', substr(trim($params['unionpayPan']), 0, 31));
         }
 
-        // 16: UnionPay Reserved (Optional, Length: 31)
+        // 16: UnionPay Reserved (Optional, Length: 31) - Must match 15 if not separately provided
         if (!empty($params['unionpayReserved'])) {
             $tags[] = $this->formatTlv('16', substr(trim($params['unionpayReserved']), 0, 31));
         } elseif (!empty($params['unionpayPan'])) {
@@ -82,7 +82,7 @@ class EmvQrService
         }
         $tags[] = $this->formatTlv('53', str_pad(substr(trim($currency), 0, 3), 3, '0', STR_PAD_LEFT));
 
-        // 54: Transaction Amount (Mandatory for Dynamic QR '12', formatted up to 13 chars e.g. '1500.00')
+        // 54: Transaction Amount (Mandatory for Dynamic QR with amount, formatted up to 13 chars e.g. '10.00')
         if (isset($params['amount']) && $params['amount'] !== '' && $params['amount'] !== null) {
             $num = (float)$params['amount'];
             if ($num > 0) {
@@ -174,7 +174,7 @@ class EmvQrService
 
         $tagNames = [
             '00' => 'Payload Format Indicator',
-            '01' => 'Point of Initiation Method (Static=11, Dynamic=12)',
+            '01' => 'Point of Initiation Method (11=Universal/Static, 12=Dynamic)',
             '02' => 'Visa Active PAN',
             '03' => 'Visa Reserved PAN',
             '04' => 'Mastercard Active PAN',

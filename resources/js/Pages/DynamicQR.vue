@@ -186,23 +186,34 @@
               />
             </div>
 
-            <!-- QR Mode Switch (Dynamic vs Static) -->
+            <!-- QR Mode Switch (POI 11 vs 12) -->
             <div class="mt-4 pt-4 border-t flex items-center justify-between" :class="isDark ? 'border-zinc-800' : 'border-zinc-100'">
               <div>
-                <div class="text-xs font-medium" :class="isDark ? 'text-zinc-200' : 'text-zinc-800'">QR Mode</div>
+                <div class="text-xs font-medium" :class="isDark ? 'text-zinc-200' : 'text-zinc-800'">Initiation Mode (Tag 01)</div>
                 <div class="text-[11px] text-zinc-500 font-mono">
-                  {{ transaction.isDynamic ? 'Tag 01 = 12 (Dynamic with exact amount locked)' : 'Tag 01 = 11 (Static QR, customer enters amount)' }}
+                  {{ transaction.poiMode === '11' ? 'Tag 01 = 11 (Universal: Works on Staging & Live Apps)' : 'Tag 01 = 12 (Strict Dynamic Mode)' }}
                 </div>
               </div>
-              <button 
-                type="button"
-                @click="transaction.isDynamic = !transaction.isDynamic"
-                :class="transaction.isDynamic 
-                  ? (isDark ? 'bg-white text-black border-white' : 'bg-zinc-900 text-white border-zinc-900') 
-                  : (isDark ? 'bg-zinc-950 text-zinc-400 border-zinc-800' : 'bg-zinc-100 text-zinc-600 border-zinc-200')"
-                class="px-3 py-1 rounded text-xs font-mono font-medium border transition">
-                {{ transaction.isDynamic ? 'Dynamic (12)' : 'Static (11)' }}
-              </button>
+              <div class="inline-flex p-0.5 rounded-lg border text-xs font-mono" :class="isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'">
+                <button 
+                  type="button"
+                  @click="transaction.poiMode = '11'"
+                  :class="transaction.poiMode === '11' 
+                    ? (isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 shadow-sm border border-zinc-200') 
+                    : 'text-zinc-500 hover:text-zinc-900'"
+                  class="px-2.5 py-1 rounded-md transition font-medium">
+                  11 (Universal)
+                </button>
+                <button 
+                  type="button"
+                  @click="transaction.poiMode = '12'"
+                  :class="transaction.poiMode === '12' 
+                    ? (isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 shadow-sm border border-zinc-200') 
+                    : 'text-zinc-500 hover:text-zinc-900'"
+                  class="px-2.5 py-1 rounded-md transition font-medium">
+                  12 (Dynamic)
+                </button>
+              </div>
             </div>
 
           </div>
@@ -534,11 +545,11 @@ const merchant = reactive({
   qrTerminalId: '',
 });
 
-// Transaction state: DEFAULT AMOUNT IS 10.00
+// Transaction state: DEFAULT AMOUNT IS 10.00, DEFAULT POI IS '11'
 const transaction = reactive({
   amount: '10.00',
   referenceLabel: 'INV-' + Math.floor(100000 + Math.random() * 900000),
-  isDynamic: true,
+  poiMode: '11',
 });
 
 // Active Base URL computed
@@ -570,9 +581,8 @@ function handleKeypad(key) {
 // Reactive QR Payload generation
 const qrData = computed(() => {
   return generateEmvQrPayload({
-    isDynamic: transaction.isDynamic,
-    pointOfInitiationMethod: transaction.isDynamic ? '12' : '11',
-    amount: transaction.isDynamic ? transaction.amount : null,
+    pointOfInitiationMethod: transaction.poiMode,
+    amount: transaction.amount,
     referenceLabel: transaction.referenceLabel,
     merchantName: merchant.merchantName,
     merchantCity: merchant.merchantCity,

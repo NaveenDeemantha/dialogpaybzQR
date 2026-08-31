@@ -55,8 +55,8 @@ export function generateEmvQrPayload(params) {
     // Tag 00: Payload Format Indicator (Mandatory: '01')
     elements.push(formatTlv('00', '01'));
 
-    // Tag 01: Point of Initiation Method ('12' for Dynamic, '11' for Static)
-    const poi = params.pointOfInitiationMethod || (params.isDynamic === false ? '11' : '12');
+    // Tag 01: Point of Initiation Method ('11' is default as per DialogPay official spec sample, '12' for Dynamic)
+    const poi = params.pointOfInitiationMethod || '11';
     elements.push(formatTlv('01', poi));
 
     // Tag 02: Visa Active (16 chars)
@@ -64,7 +64,7 @@ export function generateEmvQrPayload(params) {
         elements.push(formatTlv('02', String(params.visaPan).trim().slice(0, 16)));
     }
 
-    // Tag 03: Visa Reserved (16 chars)
+    // Tag 03: Visa Reserved (16 chars) - Must match 02 if not separately provided
     if (params.visaReserved && String(params.visaReserved).trim() !== '') {
         elements.push(formatTlv('03', String(params.visaReserved).trim().slice(0, 16)));
     } else if (params.visaPan && String(params.visaPan).trim() !== '') {
@@ -76,7 +76,7 @@ export function generateEmvQrPayload(params) {
         elements.push(formatTlv('04', String(params.mastercardPan).trim().slice(0, 16)));
     }
 
-    // Tag 05: Mastercard Reserved (16 chars)
+    // Tag 05: Mastercard Reserved (16 chars) - Must match 04 if not separately provided
     if (params.mastercardReserved && String(params.mastercardReserved).trim() !== '') {
         elements.push(formatTlv('05', String(params.mastercardReserved).trim().slice(0, 16)));
     } else if (params.mastercardPan && String(params.mastercardPan).trim() !== '') {
@@ -88,7 +88,7 @@ export function generateEmvQrPayload(params) {
         elements.push(formatTlv('15', String(params.unionpayPan).trim().slice(0, 31)));
     }
 
-    // Tag 16: UnionPay Reserved (31 chars)
+    // Tag 16: UnionPay Reserved (31 chars) - Must match 15 if not separately provided
     if (params.unionpayReserved && String(params.unionpayReserved).trim() !== '') {
         elements.push(formatTlv('16', String(params.unionpayReserved).trim().slice(0, 31)));
     } else if (params.unionpayPan && String(params.unionpayPan).trim() !== '') {
@@ -119,7 +119,7 @@ export function generateEmvQrPayload(params) {
     if (String(currency).toUpperCase().trim() === 'LKR') currency = '144';
     elements.push(formatTlv('53', String(currency).trim().padStart(3, '0').slice(0, 3)));
 
-    // Tag 54: Transaction Amount (Required for Dynamic QR '12')
+    // Tag 54: Transaction Amount (Mandatory for Dynamic QR with amount)
     if (params.amount !== undefined && params.amount !== null && String(params.amount).trim() !== '') {
         const num = parseFloat(params.amount);
         if (!isNaN(num) && num > 0) {
@@ -176,7 +176,7 @@ export function parseEmvQrPayload(payload) {
 
     const tagNames = {
         '00': { name: 'Payload Format Indicator', desc: 'EMVCo Version (01)' },
-        '01': { name: 'Point of Initiation Method', desc: '11 = Static (Reusable), 12 = Dynamic (Specific Amount)' },
+        '01': { name: 'Point of Initiation Method', desc: '11 = Universal / Static, 12 = Dynamic' },
         '02': { name: 'Visa Active PAN', desc: 'Visa Merchant Identifier' },
         '03': { name: 'Visa Reserved PAN', desc: 'Visa Reserved Identifier' },
         '04': { name: 'Mastercard Active PAN', desc: 'Mastercard Merchant Identifier' },
