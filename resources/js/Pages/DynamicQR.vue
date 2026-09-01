@@ -195,111 +195,70 @@
         </div>
 
         <!-- COLUMN 2: Customer Standee & Live QR Code (4 cols) -->
-        <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200/90 shadow-md'" class="lg:col-span-4 border rounded-2xl p-4 sm:p-5 flex flex-col justify-between items-center text-center overflow-hidden">
+        <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200/90 shadow-sm'" class="lg:col-span-4 border rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between items-center text-center overflow-hidden">
           
-          <!-- Standee Header -->
+          <!-- Column Top Bar with Actions -->
           <div class="w-full pb-2 border-b flex justify-between items-center" :class="isDark ? 'border-zinc-800 text-zinc-400' : 'border-zinc-100 text-zinc-500'">
             <div class="flex items-center gap-1.5">
               <span class="h-2 w-2 rounded-full" :class="hasPaymentRails ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
-              <span class="text-[10px] font-mono uppercase tracking-widest font-semibold">
+              <span class="text-[10px] font-mono uppercase tracking-widest font-bold">
                 {{ form.environment === 'live' ? 'LIVE PRODUCTION QR' : 'SANDBOX / UAT QR' }}
               </span>
             </div>
-            <span class="text-[10px] font-mono uppercase font-bold text-zinc-400">LANKAQR</span>
+            <span class="text-[10px] font-mono uppercase font-black px-1.5 py-0.5 rounded" :class="isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-700'">
+              LANKAQR
+            </span>
           </div>
 
-          <!-- Live Mode Sandbox Mock Warning Banner -->
+          <!-- Live Mode Warning Banner (if active) -->
           <div v-if="form.environment === 'live' && isUsingSandboxMockData" 
-            class="w-full mt-1.5 p-2 rounded-lg text-left text-[11px] leading-tight border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
-            <div class="font-semibold flex items-center gap-1">
-              <span>⚠️</span>
-              <span>Live Mode using Sandbox Mock Data</span>
-            </div>
-            <p class="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
-              Live banking apps will reject sandbox test IDs as "Invalid QR". Open <button type="button" @click="showSettingsDrawer = true" class="underline font-semibold text-amber-600 dark:text-amber-300">API Config</button> to fetch your live merchant details.
-            </p>
-          </div>
-
-          <!-- Missing Payment Rails Alert -->
-          <div v-if="!hasPaymentRails" 
-            class="w-full mt-1.5 p-2 rounded-lg text-left text-[11px] leading-tight border bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400">
-            <div class="font-semibold flex items-center gap-1">
-              <span>🚨</span>
-              <span>No Merchant Account / PAN Found</span>
-            </div>
-            <p class="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
-              This QR code has no payment rail (Visa/Mastercard/GUID) and cannot be scanned. Configure your merchant details in API Config.
-            </p>
+            class="w-full mt-1.5 p-1.5 rounded-lg text-left text-[10px] leading-tight border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
+            <span>⚠️ Live Mode using Sandbox Mock Data. Open <button type="button" @click="showSettingsDrawer = true" class="underline font-semibold">API Config</button> to fetch live details.</span>
           </div>
 
           <!-- Full Printable Standee Card Container -->
-          <div id="printableQrStandee" class="w-full flex-1 flex flex-col justify-between items-center text-center p-3 sm:p-4 rounded-2xl transition"
-            :class="isDark ? 'bg-zinc-950/60 border border-zinc-800' : 'bg-zinc-50/80 border border-zinc-200/80'">
+          <div id="printableQrStandee" class="w-full flex-1 flex flex-col justify-between items-center text-center p-2.5 sm:p-3 my-1 rounded-xl transition"
+            :class="isDark ? 'bg-zinc-950/60 border border-zinc-800' : 'bg-zinc-50 border border-zinc-200/80'">
             
-            <!-- Standee Brand Top Bar -->
-            <div class="w-full pb-2 border-b flex justify-between items-center" :class="isDark ? 'border-zinc-800 text-zinc-400' : 'border-zinc-200 text-zinc-600'">
-              <div class="flex items-center gap-1.5">
-                <span class="h-2 w-2 rounded-full" :class="hasPaymentRails ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
-                <span class="text-[10px] font-mono uppercase tracking-widest font-bold">
-                  {{ form.environment === 'live' ? 'DialogPay • LankaQR' : 'Sandbox • LankaQR' }}
-                </span>
-              </div>
-              <span class="text-[10px] font-mono uppercase font-black tracking-wider px-1.5 py-0.5 rounded" :class="isDark ? 'bg-zinc-900 text-zinc-300' : 'bg-white text-zinc-800 border border-zinc-200'">
-                CBSL Verified
-              </span>
-            </div>
-
-            <!-- Live Mode Sandbox Mock Warning Banner -->
-            <div v-if="form.environment === 'live' && isUsingSandboxMockData" 
-              class="w-full mt-1.5 p-2 rounded-lg text-left text-[11px] leading-tight border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
-              <div class="font-semibold flex items-center gap-1">
-                <span>⚠️</span>
-                <span>Live Mode using Sandbox Mock Data</span>
-              </div>
-              <p class="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
-                Live banking apps will reject sandbox test IDs. Open <button type="button" @click="showSettingsDrawer = true" class="underline font-semibold text-amber-600 dark:text-amber-300">API Config</button> to fetch live details.
-              </p>
-            </div>
-
-            <!-- Merchant Title -->
-            <div class="my-1.5">
-              <h2 class="text-base sm:text-lg font-black tracking-tight truncate max-w-[280px]" :class="isDark ? 'text-white' : 'text-zinc-900'">
+            <!-- Standee Merchant Title -->
+            <div class="my-0.5">
+              <h2 class="text-sm sm:text-base font-black tracking-tight truncate max-w-[260px]" :class="isDark ? 'text-white' : 'text-zinc-900'">
                 {{ merchant.merchantName || 'Bean & Beyond CO' }}
               </h2>
-              <p class="text-[11px] font-medium" :class="isDark ? 'text-zinc-400' : 'text-zinc-500'">
+              <p class="text-[10px] font-medium" :class="isDark ? 'text-zinc-400' : 'text-zinc-500'">
                 {{ merchant.merchantCity || 'Colombo 10' }}, Sri Lanka
               </p>
             </div>
 
             <!-- Dynamic QR Code Canvas with ISO Quiet Zone -->
-            <div class="bg-white p-4 rounded-2xl border-2 border-zinc-200 shadow-sm inline-block my-1">
+            <div class="bg-white p-3 rounded-xl border-2 border-zinc-200 shadow-sm inline-block my-0.5">
               <qrcode-vue
                 ref="qrCodeRef"
                 :value="qrPayload"
-                :size="220"
+                :size="190"
                 :margin="4"
                 level="M"
                 render-as="canvas"
               />
             </div>
 
-            <div class="text-[10px] font-mono uppercase tracking-wider text-zinc-400 my-0.5">
+            <div class="text-[9px] font-mono uppercase tracking-wider text-zinc-400">
               Scan & Pay with Any Bank App
             </div>
 
             <!-- Total Amount Highlight -->
-            <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xs'" class="w-full border rounded-xl py-2 px-3 my-1">
-              <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">Payable Amount</div>
-              <div class="text-2xl font-black font-mono mt-0.5 tracking-tight" :class="isDark ? 'text-white' : 'text-zinc-900'">
+            <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'" class="w-full border rounded-lg py-1.5 px-2.5 my-0.5">
+              <div class="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">Payable Amount</div>
+              <div class="text-xl font-black font-mono tracking-tight" :class="isDark ? 'text-white' : 'text-zinc-900'">
                 {{ formattedDisplayAmount }}
               </div>
-              <div v-if="transaction.referenceLabel" class="text-[10px] text-zinc-500 font-mono mt-0.5">
-                Invoice Ref: <span class="font-bold" :class="isDark ? 'text-zinc-300' : 'text-zinc-700'">{{ transaction.referenceLabel }}</span>
+              <div v-if="transaction.referenceLabel" class="text-[9px] text-zinc-500 font-mono">
+                Ref: <span class="font-bold" :class="isDark ? 'text-zinc-300' : 'text-zinc-700'">{{ transaction.referenceLabel }}</span>
               </div>
             </div>
 
             <!-- Payment Rails Strip -->
-            <div class="w-full text-[10px] font-mono text-zinc-400 flex items-center justify-center gap-1.5 py-0.5">
+            <div class="w-full text-[9px] font-mono text-zinc-400 flex items-center justify-center gap-1.5 py-0.5">
               <span class="font-bold" :class="merchant.visaPan ? 'text-emerald-500' : 'text-zinc-400'">VISA</span>
               <span>•</span>
               <span class="font-bold" :class="merchant.mastercardPan ? 'text-emerald-500' : 'text-zinc-400'">MASTERCARD</span>
@@ -310,7 +269,7 @@
             </div>
 
             <!-- Standee Card Footer / Brand Credit -->
-            <div class="w-full pt-1.5 border-t mt-1 flex items-center justify-between text-[10px] font-mono text-zinc-400" :class="isDark ? 'border-zinc-800' : 'border-zinc-200'">
+            <div class="w-full pt-1 border-t flex items-center justify-between text-[9px] font-mono text-zinc-400" :class="isDark ? 'border-zinc-800' : 'border-zinc-200'">
               <span>Powered by DialogPay</span>
               <a href="https://hoomansdigital.com" target="_blank" class="font-semibold underline" :class="isDark ? 'text-zinc-300' : 'text-zinc-700'">
                 hoomansdigital.com
@@ -319,19 +278,19 @@
 
           </div>
 
-          <!-- Standee Action Buttons (Screen Only) -->
-          <div class="w-full grid grid-cols-2 gap-2 pt-2.5 mt-2 border-t" :class="isDark ? 'border-zinc-800' : 'border-zinc-100'">
+          <!-- Standee Action Buttons: PROMINENT & FIXED AT BOTTOM -->
+          <div class="w-full grid grid-cols-2 gap-2 pt-2 border-t flex-shrink-0" :class="isDark ? 'border-zinc-800' : 'border-zinc-100'">
             <button 
               type="button" 
               @click="downloadQrImage"
               :class="isDark 
                 ? 'bg-zinc-950 hover:bg-zinc-800 text-zinc-200 border-zinc-800' 
                 : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200 shadow-sm'"
-              class="border text-[11px] font-medium py-2 rounded-lg transition flex items-center justify-center gap-1">
+              class="border text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-1.5">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Download
+              <span>Download</span>
             </button>
 
             <button 
@@ -340,11 +299,11 @@
               :class="isDark 
                 ? 'bg-white hover:bg-zinc-200 text-black' 
                 : 'bg-zinc-900 hover:bg-black text-white shadow-sm'"
-              class="text-[11px] font-medium py-2 rounded-lg transition flex items-center justify-center gap-1">
+              class="text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-1.5">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
-              Print Standee
+              <span>Print Standee</span>
             </button>
           </div>
 
