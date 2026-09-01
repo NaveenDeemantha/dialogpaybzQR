@@ -91,8 +91,8 @@
       <!-- 3-Column Zero-Scroll Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 flex-1 min-h-0 items-stretch">
         
-        <!-- COLUMN 1: Cashier Payment Register (4 cols) -->
-        <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200/90 shadow-sm'" class="lg:col-span-4 border rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden">
+        <!-- COLUMN 1: Cashier Payment Register (Compact 3 cols) -->
+        <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200/90 shadow-sm'" class="lg:col-span-3 border rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between overflow-hidden">
           
           <!-- Amount Box -->
           <div>
@@ -305,8 +305,8 @@
 
         </div>
 
-        <!-- COLUMN 3: Real-Time EMVCo Payload & Tag Inspector (4 cols) -->
-        <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200/90 shadow-sm'" class="lg:col-span-4 border rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden">
+        <!-- COLUMN 3: Real-Time EMVCo Payload & Tag Inspector (Wide 5 cols) -->
+        <div :class="isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200/90 shadow-sm'" class="lg:col-span-5 border rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden">
           
           <!-- Inspector Header -->
           <div class="flex items-center justify-between pb-2 mb-2 border-b" :class="isDark ? 'border-zinc-800' : 'border-zinc-100'">
