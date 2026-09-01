@@ -25,55 +25,94 @@ class GenieBizService
     }
 
     /**
-     * Fetch merchant / company details from Genie Business API (/public/me).
+     * Fetch merchant / company details from Genie Business API.
      */
     public function getCompanyDetails(string $environment, string $apiKey, ?string $appId = null): array
     {
         $baseUrl = $this->getBaseUrl($environment);
-        $endpoint = rtrim($baseUrl, '/') . '/public/me';
+        $cleanKey = preg_replace('/^bearer\s+/i', '', trim($apiKey));
+        $cleanAppId = !empty($appId) ? trim($appId) : null;
 
-        $authHeader = trim($apiKey);
-        $headers = [
-            'Authorization' => $authHeader,
-            'Accept'        => 'application/json',
+        $endpoints = [
+            rtrim($baseUrl, '/') . '/public/me',
+            rtrim($baseUrl, '/') . '/public/v2/me',
+            rtrim($baseUrl, '/') . '/public/v1/me',
+            rtrim($baseUrl, '/') . '/public/merchant',
+            rtrim($baseUrl, '/') . '/public/v2/merchant',
+            rtrim($baseUrl, '/') . '/public/v1/merchant',
+            rtrim($baseUrl, '/') . '/v1/merchant',
+            rtrim($baseUrl, '/') . '/public/qr/static',
         ];
 
-        if (!empty($appId)) {
-            $headers['x-app-id'] = trim($appId);
+        $headerVariants = [
+            // Variant 1: Raw API key in Authorization (Required by DialogPay live gateway)
+            array_filter([
+                'Authorization' => $cleanKey,
+                'Accept'        => 'application/json',
+                'x-app-id'      => $cleanAppId,
+                'appId'         => $cleanAppId,
+            ]),
+            // Variant 2: Bearer + x-app-id
+            array_filter([
+                'Authorization' => 'Bearer ' . $cleanKey,
+                'x-app-id'      => $cleanAppId,
+                'appId'         => $cleanAppId,
+                'Accept'        => 'application/json',
+            ]),
+            // Variant 3: x-api-key + x-app-id
+            array_filter([
+                'x-api-key'     => $cleanKey,
+                'apiKey'        => $cleanKey,
+                'x-app-id'      => $cleanAppId,
+                'appId'         => $cleanAppId,
+                'Accept'        => 'application/json',
+            ]),
+        ];
+
+        $lastResponse = null;
+        $lastError = null;
+
+        foreach ($endpoints as $endpoint) {
+            foreach ($headerVariants as $headers) {
+                try {
+                    $response = Http::withoutVerifying()
+                        ->timeout(10)
+                        ->withHeaders($headers)
+                        ->get($endpoint);
+
+                    if ($response->successful()) {
+                        return [
+                            'success'  => true,
+                            'data'     => $response->json() ?? $response->body(),
+                            'status'   => $response->status(),
+                            'endpoint' => $endpoint,
+                        ];
+                    }
+
+                    $lastResponse = $response;
+                } catch (Exception $e) {
+                    $lastError = $e->getMessage();
+                }
+            }
         }
 
-        try {
-            $response = Http::withHeaders($headers)
-                ->timeout(15)
-                ->get($endpoint);
-
-            if (!$response->successful() && $response->status() === 401 && !str_starts_with(strtolower($authHeader), 'bearer ')) {
-                $headers['Authorization'] = 'Bearer ' . $authHeader;
-                $response = Http::withHeaders($headers)
-                    ->timeout(15)
-                    ->get($endpoint);
+        if ($lastResponse) {
+            $msg = $lastResponse->json('message') ?? $lastResponse->json('error') ?? $lastResponse->body();
+            if ($lastResponse->status() === 401) {
+                $msg = 'Unauthorized (401): Please verify your API Key and check if your App ID (x-app-id) is required from your Dialog Pay Business dashboard.';
             }
-
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'data'    => $response->json(),
-                    'status'  => $response->status(),
-                ];
-            }
-
             return [
                 'success' => false,
-                'status'  => $response->status(),
-                'message' => $response->json('message') ?? $response->body() ?? 'Failed to fetch company details from Genie Business API',
-                'error'   => $response->json(),
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'status'  => 500,
-                'message' => 'Network error connecting to Genie Business API: ' . $e->getMessage(),
+                'status'  => $lastResponse->status(),
+                'message' => $msg,
+                'error'   => $lastResponse->json(),
             ];
         }
+
+        return [
+            'success' => false,
+            'status'  => 500,
+            'message' => 'Network error connecting to Dialog Pay Business API: ' . ($lastError ?? 'Unknown connection failure'),
+        ];
     }
 }

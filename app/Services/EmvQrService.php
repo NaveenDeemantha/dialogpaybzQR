@@ -55,9 +55,15 @@ class EmvQrService
         }
 
         // 26: Globally unique identifier data object / Merchant Account Information (LANKAQR GUID)
-        $guid = $params['merchantGuidAcquirerId'] ?? $params['merchantAcquiringBankId'] ?? null;
-        if (!empty($guid)) {
-            $guid = trim($guid);
+        $rawGuid = $params['merchantGuidAcquirerId'] ?? $params['merchantAcquiringBankId'] ?? null;
+        if (!empty($rawGuid)) {
+            $guid = trim($rawGuid);
+            if (str_starts_with($guid, '26') && strlen($guid) >= 4) {
+                $fullLen = (int)substr($guid, 2, 2);
+                if (strlen($guid) === $fullLen + 4) {
+                    $guid = substr($guid, 4);
+                }
+            }
             if (str_starts_with($guid, '00') && strlen($guid) >= 4) {
                 $subLen = (int)substr($guid, 2, 2);
                 if (strlen($guid) === $subLen + 4) {
@@ -95,18 +101,33 @@ class EmvQrService
         $countryCode = !empty($params['merchantCountryCode']) ? strtoupper(substr(trim($params['merchantCountryCode']), 0, 2)) : 'LK';
         $tags[] = $this->formatTlv('58', $countryCode);
 
-        // 59: Merchant Name (Mandatory, max 25 chars)
+        // 59: Merchant Name (Mandatory, up to 25 chars)
         $merchantName = !empty($params['merchantName']) ? trim($params['merchantName']) : 'Genie Merchant';
-        $tags[] = $this->formatTlv('59', substr($merchantName, 0, 25));
+        $cleanName = preg_replace('/[^a-zA-Z0-9\s&\/\-_.]/', ' ', $merchantName);
+        $cleanName = trim(preg_replace('/\s+/', ' ', $cleanName));
+        $tags[] = $this->formatTlv('59', substr($cleanName, 0, 25));
 
         // 60: Merchant City (Mandatory, max 15 chars)
         $merchantCity = !empty($params['merchantCity']) ? trim($params['merchantCity']) : 'Colombo';
         $tags[] = $this->formatTlv('60', substr($merchantCity, 0, 15));
 
-        // 62: Additional Data Field Template (Strictly Sub-tag 05 Reference ONLY as per guide)
+        // 62: Additional Data Field Template (Strictly Sub-tag 05 Reference of 11 chars as per DialogPay specification)
         $reference = !empty($params['referenceLabel']) ? trim($params['referenceLabel']) : '00000000000';
-        $tag62Sub05 = $this->formatTlv('05', substr($reference, 0, 25));
-        $tags[] = $this->formatTlv('62', $tag62Sub05);
+        $cleanRef = preg_replace('/[^a-zA-Z0-9]/', '', $reference);
+        if (empty($cleanRef)) {
+            $cleanRef = '00000000000';
+        } elseif (strlen($cleanRef) < 11) {
+            $cleanRef = str_pad($cleanRef, 11, '0', STR_PAD_LEFT);
+        } elseif (strlen($cleanRef) > 11 && strlen($cleanRef) <= 25) {
+            $cleanRef = substr($cleanRef, 0, 25);
+        }
+        $tag62Content = $this->formatTlv('05', $cleanRef);
+        
+        $terminalId = $params['qrTerminalId'] ?? $params['terminalId'] ?? null;
+        if (!empty($params['includeTerminalId']) && !empty($terminalId)) {
+            $tag62Content .= $this->formatTlv('07', substr(trim($terminalId), 0, 25));
+        }
+        $tags[] = $this->formatTlv('62', $tag62Content);
 
         // Assemble payload string without CRC
         $payloadWithoutCrc = implode('', $tags) . '6304';

@@ -44,6 +44,30 @@ class EmvQrServiceTest extends TestCase
         $this->assertEquals(4, strlen($result['crc']));
         $this->assertStringContainsString('54071500.50', $result['payload']);
         $this->assertStringContainsString('010212', $result['payload']);
+        $this->assertStringContainsString('05110INV2026001', $result['payload']);
         $this->assertStringEndsWith('6304' . $result['crc'], $result['payload']);
+    }
+
+    public function test_dynamic_qr_with_terminal_id()
+    {
+        $service = new EmvQrService();
+
+        $params = [
+            'pointOfInitiationMethod' => '12',
+            'visaPan' => '4325511220026799',
+            'merchantGuidAcquirerId' => '00281699500162022121311121661165',
+            'amount' => '250.00',
+            'merchantName' => 'My Live Store',
+            'merchantCity' => 'Colombo',
+            'referenceLabel' => 'BILL-1001',
+            'qrTerminalId' => 'TERM001',
+            'includeTerminalId' => true,
+        ];
+
+        $result = $service->generateDynamicQrPayload($params);
+
+        $this->assertNotEmpty($result['payload']);
+        $this->assertStringContainsString('0511000BILL1001', $result['payload']);
+        $this->assertStringContainsString('0707TERM001', $result['payload']);
     }
 }

@@ -51,10 +51,18 @@ export function formatTlv(tag, value) {
  */
 export function formatTag26Guid(guid) {
     if (!guid) return '';
-    const str = String(guid).trim();
+    let str = String(guid).trim();
     if (!str) return '';
 
-    // If already formatted as Sub-tag 00 (starts with 00 and length matches length indicator)
+    // If already starts with '26' (e.g. '2632002816995...' or '260800046995')
+    if (str.startsWith('26') && str.length >= 4) {
+        const fullLen = parseInt(str.substring(2, 4), 10);
+        if (!isNaN(fullLen) && str.length === fullLen + 4) {
+            str = str.substring(4);
+        }
+    }
+
+    // If formatted as Sub-tag 00 (e.g. '002816995...' or '00046995')
     if (str.startsWith('00') && str.length >= 4) {
         const subLen = parseInt(str.substring(2, 4), 10);
         if (!isNaN(subLen) && str.length === subLen + 4) {
@@ -62,7 +70,7 @@ export function formatTag26Guid(guid) {
         }
     }
 
-    // Otherwise wrap raw GUID in Sub-tag 00
+    // Otherwise wrap raw GUID in Sub-tag 00 (e.g. '1699500162022121311121661165')
     return formatTlv('26', formatTlv('00', str));
 }
 
@@ -146,9 +154,9 @@ export function generateEmvQrPayload(params) {
     const country = (params.merchantCountryCode || params.country || 'LK').toUpperCase().trim().slice(0, 2);
     elements.push(formatTlv('58', country));
 
-    // Tag 59: Merchant Name (Up to 25 chars, sanitized)
+    // Tag 59: Merchant Name (Up to 25 chars, sanitized preserving '&')
     const rawName = String(params.merchantName || params.tradingName || 'Genie Merchant').trim();
-    const cleanName = rawName.replace(/[^a-zA-Z0-9\s\-._]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 25);
+    const cleanName = rawName.replace(/[^a-zA-Z0-9\s&/\-_.]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 25);
     elements.push(formatTlv('59', cleanName || 'Genie Merchant'));
 
     // Tag 60: Merchant City (Up to 15 chars, sanitized)
@@ -156,11 +164,28 @@ export function generateEmvQrPayload(params) {
     const cleanCity = rawCity.replace(/[^a-zA-Z0-9\s\-._]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 15);
     elements.push(formatTlv('60', cleanCity || 'Colombo'));
 
-    // Tag 62: Additional Data Field Template (Strictly Sub-tag 05 Reference ONLY as per guide)
+    // Tag 62: Additional Data Field Template (Strictly Sub-tag 05 Reference of 11 chars as per DialogPay specification)
     const rawRef = params.referenceLabel ? String(params.referenceLabel).trim() : '00000000000';
-    const cleanRef = rawRef.replace(/[^a-zA-Z0-9\-_.]/g, '').slice(0, 25) || '00000000000';
-    const tag62Sub05 = formatTlv('05', cleanRef);
-    elements.push(formatTlv('62', tag62Sub05));
+    let cleanRef = rawRef.replace(/[^a-zA-Z0-9]/g, '');
+    if (!cleanRef) {
+        cleanRef = '00000000000';
+    } else if (cleanRef.length < 11) {
+        cleanRef = cleanRef.padStart(11, '0');
+    } else if (cleanRef.length > 11 && cleanRef.length <= 25) {
+        // Keep as is up to 25 if long
+        cleanRef = cleanRef.slice(0, 25);
+    }
+    let tag62Subtags = formatTlv('05', cleanRef);
+
+    // Only append Sub-tag 07 if explicitly enabled/provided and non-empty
+    const termId = params.qrTerminalId || params.terminalId;
+    if (params.includeTerminalId && termId && String(termId).trim() !== '') {
+        const cleanTid = String(termId).replace(/[^a-zA-Z0-9\-_.]/g, '').slice(0, 25);
+        if (cleanTid) {
+            tag62Subtags += formatTlv('07', cleanTid);
+        }
+    }
+    elements.push(formatTlv('62', tag62Subtags));
 
     // Assemble payload without CRC and append '6304'
     const payloadWithoutCrc = elements.join('') + '6304';
@@ -330,3 +355,54 @@ export function parseStaticQrToMerchant(rawQrString) {
 
     return merchantData;
 }
+
+/**
+ * Recursively search any arbitrary API response payload or object for an EMVCo QR string (000201...).
+ *
+ * @param {*} obj
+ * @returns {string|null}
+ */
+export function findQrStringInObject(obj) {
+    if (!obj) return null;
+
+    if (typeof obj === 'string') {
+        const trimmed = obj.trim();
+        if (trimmed.startsWith('000201') && trimmed.length >= 20) {
+            return trimmed;
+        }
+        return null;
+    }
+
+    if (typeof obj === 'object') {
+        for (const key of Object.keys(obj)) {
+            const val = obj[key];
+            const found = findQrStringInObject(val);
+            if (found) return found;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Decode QR code from an image file using browser BarcodeDetector API if available.
+ *
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+export async function decodeQrImageFile(file) {
+    if (!('BarcodeDetector' in window)) {
+        throw new Error('BarcodeDetector API is not supported in this browser. Please paste the raw QR text instead.');
+    }
+
+    const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+    const bitmap = await createImageBitmap(file);
+    const barcodes = await detector.detect(bitmap);
+
+    if (!barcodes || barcodes.length === 0) {
+        throw new Error('No QR code detected in the uploaded image. Please ensure the standee image is clear and well lit.');
+    }
+
+    return barcodes[0].rawValue;
+}
+
