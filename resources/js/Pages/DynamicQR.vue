@@ -1079,8 +1079,11 @@ onMounted(() => {
 <style>
 @media print {
   @page {
-    margin: 1cm;
+    margin: 8mm;
     size: auto;
+  }
+  body {
+    background: #ffffff !important;
   }
   body * {
     visibility: hidden;
@@ -1095,19 +1098,39 @@ onMounted(() => {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 380px;
-    padding: 24px !important;
+    width: 90% !important;
+    max-width: 540px !important;
+    padding: 32px 28px !important;
     background: #ffffff !important;
     color: #18181b !important;
-    border: 2px solid #e4e4e7 !important;
-    border-radius: 24px !important;
+    border: 3px solid #18181b !important;
+    border-radius: 28px !important;
     box-shadow: none !important;
+    gap: 12px !important;
   }
   #printableQrStandee h2 {
+    font-size: 24px !important;
     color: #09090b !important;
+    margin-bottom: 2px !important;
+    max-width: 100% !important;
   }
-  #printableQrStandee p, #printableQrStandee span {
-    color: #27272a !important;
+  #printableQrStandee p {
+    font-size: 13px !important;
+    color: #52525b !important;
+  }
+  #printableQrStandee canvas {
+    width: 270px !important;
+    height: 270px !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+  #printableQrStandee .text-xl, #printableQrStandee .text-2xl {
+    font-size: 32px !important;
+    color: #09090b !important;
+    font-weight: 900 !important;
+  }
+  #printableQrStandee span {
+    font-size: 11px !important;
   }
 }
 </style>
