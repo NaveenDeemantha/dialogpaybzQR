@@ -17,7 +17,7 @@ class EmvQrService
         // 00: Payload Format Indicator (Mandatory: '01')
         $tags[] = $this->formatTlv('00', '01');
 
-        // 01: Point of Initiation Method ('11' is default as per DialogPay official spec sample, '12' for Dynamic)
+        // 01: Point of Initiation Method ('11' is default as per DialogPay spec, '12' for Dynamic)
         $pointOfInitiation = $params['pointOfInitiationMethod'] ?? '11';
         $tags[] = $this->formatTlv('01', $pointOfInitiation);
 
@@ -26,11 +26,10 @@ class EmvQrService
             $tags[] = $this->formatTlv('02', substr(trim($params['visaPan']), 0, 16));
         }
 
-        // 03: Visa Reserved (Length: 16) - Must match 02 if not separately provided
-        if (!empty($params['visaReserved'])) {
-            $tags[] = $this->formatTlv('03', substr(trim($params['visaReserved']), 0, 16));
-        } elseif (!empty($params['visaPan'])) {
-            $tags[] = $this->formatTlv('03', substr(trim($params['visaPan']), 0, 16));
+        // 03: Visa Reserved (Length: 16) - Matches Tag 02 as per DialogPay guide specification
+        $visaRes = $params['visaReserved'] ?? $params['visaPan'] ?? null;
+        if (!empty($visaRes)) {
+            $tags[] = $this->formatTlv('03', substr(trim($visaRes), 0, 16));
         }
 
         // 04: Mastercard Active (Length: 16)
@@ -38,11 +37,10 @@ class EmvQrService
             $tags[] = $this->formatTlv('04', substr(trim($params['mastercardPan']), 0, 16));
         }
 
-        // 05: Mastercard Reserved (Length: 16) - Must match 04 if not separately provided
-        if (!empty($params['mastercardReserved'])) {
-            $tags[] = $this->formatTlv('05', substr(trim($params['mastercardReserved']), 0, 16));
-        } elseif (!empty($params['mastercardPan'])) {
-            $tags[] = $this->formatTlv('05', substr(trim($params['mastercardPan']), 0, 16));
+        // 05: Mastercard Reserved (Length: 16) - Matches Tag 04 as per DialogPay guide specification
+        $mcRes = $params['mastercardReserved'] ?? $params['mastercardPan'] ?? null;
+        if (!empty($mcRes)) {
+            $tags[] = $this->formatTlv('05', substr(trim($mcRes), 0, 16));
         }
 
         // 15: UnionPay Active (Optional, Length: 31)
@@ -50,22 +48,24 @@ class EmvQrService
             $tags[] = $this->formatTlv('15', substr(trim($params['unionpayPan']), 0, 31));
         }
 
-        // 16: UnionPay Reserved (Optional, Length: 31) - Must match 15 if not separately provided
-        if (!empty($params['unionpayReserved'])) {
-            $tags[] = $this->formatTlv('16', substr(trim($params['unionpayReserved']), 0, 31));
-        } elseif (!empty($params['unionpayPan'])) {
-            $tags[] = $this->formatTlv('16', substr(trim($params['unionpayPan']), 0, 31));
+        // 16: UnionPay Reserved (Optional, Length: 31) - Matches Tag 15 as per DialogPay guide specification
+        $upRes = $params['unionpayReserved'] ?? $params['unionpayPan'] ?? null;
+        if (!empty($upRes)) {
+            $tags[] = $this->formatTlv('16', substr(trim($upRes), 0, 31));
         }
 
-        // 26: Globally unique identifier data object / Merchant Account Information (Length: 32)
-        // Note: In LANKAQR/EMVCo, Tag 26 contains Sub-tag 00 (GUID).
+        // 26: Globally unique identifier data object / Merchant Account Information (LANKAQR GUID)
         $guid = $params['merchantGuidAcquirerId'] ?? $params['merchantAcquiringBankId'] ?? null;
         if (!empty($guid)) {
             $guid = trim($guid);
-            if (str_starts_with($guid, '00') && strlen($guid) >= 30) {
-                $tag26Value = $guid;
+            if (str_starts_with($guid, '00') && strlen($guid) >= 4) {
+                $subLen = (int)substr($guid, 2, 2);
+                if (strlen($guid) === $subLen + 4) {
+                    $tag26Value = $guid;
+                } else {
+                    $tag26Value = $this->formatTlv('00', $guid);
+                }
             } else {
-                // Wrap raw GUID in Sub-tag 00
                 $tag26Value = $this->formatTlv('00', $guid);
             }
             $tags[] = $this->formatTlv('26', $tag26Value);
@@ -103,18 +103,10 @@ class EmvQrService
         $merchantCity = !empty($params['merchantCity']) ? trim($params['merchantCity']) : 'Colombo';
         $tags[] = $this->formatTlv('60', substr($merchantCity, 0, 15));
 
-        // 62: Additional Data Field Template (Mandatory)
-        // Sub-tag 05: Reference Label
-        $subTags62 = [];
+        // 62: Additional Data Field Template (Strictly Sub-tag 05 Reference ONLY as per guide)
         $reference = !empty($params['referenceLabel']) ? trim($params['referenceLabel']) : '00000000000';
-        $subTags62[] = $this->formatTlv('05', substr($reference, 0, 25));
-
-        if (!empty($params['qrTerminalId'])) {
-            $subTags62[] = $this->formatTlv('07', substr(trim($params['qrTerminalId']), 0, 25));
-        }
-
-        $tag62Value = implode('', $subTags62);
-        $tags[] = $this->formatTlv('62', $tag62Value);
+        $tag62Sub05 = $this->formatTlv('05', substr($reference, 0, 25));
+        $tags[] = $this->formatTlv('62', $tag62Sub05);
 
         // Assemble payload string without CRC
         $payloadWithoutCrc = implode('', $tags) . '6304';

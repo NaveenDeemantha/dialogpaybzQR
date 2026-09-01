@@ -32,8 +32,9 @@ class GenieBizService
         $baseUrl = $this->getBaseUrl($environment);
         $endpoint = rtrim($baseUrl, '/') . '/public/me';
 
+        $authHeader = trim($apiKey);
         $headers = [
-            'Authorization' => trim($apiKey),
+            'Authorization' => $authHeader,
             'Accept'        => 'application/json',
         ];
 
@@ -45,6 +46,13 @@ class GenieBizService
             $response = Http::withHeaders($headers)
                 ->timeout(15)
                 ->get($endpoint);
+
+            if (!$response->successful() && $response->status() === 401 && !str_starts_with(strtolower($authHeader), 'bearer ')) {
+                $headers['Authorization'] = 'Bearer ' . $authHeader;
+                $response = Http::withHeaders($headers)
+                    ->timeout(15)
+                    ->get($endpoint);
+            }
 
             if ($response->successful()) {
                 return [

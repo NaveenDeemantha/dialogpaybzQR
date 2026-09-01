@@ -44,6 +44,29 @@ export function formatTlv(tag, value) {
 }
 
 /**
+ * Format GUID Subtag 00 inside Tag 26 (Merchant Account Information / LANKAQR GUID).
+ *
+ * @param {string} guid
+ * @returns {string}
+ */
+export function formatTag26Guid(guid) {
+    if (!guid) return '';
+    const str = String(guid).trim();
+    if (!str) return '';
+
+    // If already formatted as Sub-tag 00 (starts with 00 and length matches length indicator)
+    if (str.startsWith('00') && str.length >= 4) {
+        const subLen = parseInt(str.substring(2, 4), 10);
+        if (!isNaN(subLen) && str.length === subLen + 4) {
+            return formatTlv('26', str);
+        }
+    }
+
+    // Otherwise wrap raw GUID in Sub-tag 00
+    return formatTlv('26', formatTlv('00', str));
+}
+
+/**
  * Generate EMVCo Dynamic QR Payload from parameters.
  *
  * @param {Object} params
@@ -55,7 +78,7 @@ export function generateEmvQrPayload(params) {
     // Tag 00: Payload Format Indicator (Mandatory: '01')
     elements.push(formatTlv('00', '01'));
 
-    // Tag 01: Point of Initiation Method ('11' is default as per DialogPay official spec sample, '12' for Dynamic)
+    // Tag 01: Point of Initiation Method ('11' is default per DialogPay spec, '12' for Dynamic)
     const poi = params.pointOfInitiationMethod || '11';
     elements.push(formatTlv('01', poi));
 
@@ -64,11 +87,10 @@ export function generateEmvQrPayload(params) {
         elements.push(formatTlv('02', String(params.visaPan).trim().slice(0, 16)));
     }
 
-    // Tag 03: Visa Reserved (16 chars) - Must match 02 if not separately provided
-    if (params.visaReserved && String(params.visaReserved).trim() !== '') {
-        elements.push(formatTlv('03', String(params.visaReserved).trim().slice(0, 16)));
-    } else if (params.visaPan && String(params.visaPan).trim() !== '') {
-        elements.push(formatTlv('03', String(params.visaPan).trim().slice(0, 16)));
+    // Tag 03: Visa Reserved (16 chars) - Matches Tag 02 as per DialogPay guide specification
+    const visaRes = params.visaReserved || params.visaPan;
+    if (visaRes && String(visaRes).trim() !== '') {
+        elements.push(formatTlv('03', String(visaRes).trim().slice(0, 16)));
     }
 
     // Tag 04: Mastercard Active (16 chars)
@@ -76,11 +98,10 @@ export function generateEmvQrPayload(params) {
         elements.push(formatTlv('04', String(params.mastercardPan).trim().slice(0, 16)));
     }
 
-    // Tag 05: Mastercard Reserved (16 chars) - Must match 04 if not separately provided
-    if (params.mastercardReserved && String(params.mastercardReserved).trim() !== '') {
-        elements.push(formatTlv('05', String(params.mastercardReserved).trim().slice(0, 16)));
-    } else if (params.mastercardPan && String(params.mastercardPan).trim() !== '') {
-        elements.push(formatTlv('05', String(params.mastercardPan).trim().slice(0, 16)));
+    // Tag 05: Mastercard Reserved (16 chars) - Matches Tag 04 as per DialogPay guide specification
+    const mcRes = params.mastercardReserved || params.mastercardPan;
+    if (mcRes && String(mcRes).trim() !== '') {
+        elements.push(formatTlv('05', String(mcRes).trim().slice(0, 16)));
     }
 
     // Tag 15: UnionPay Active (31 chars)
@@ -88,26 +109,19 @@ export function generateEmvQrPayload(params) {
         elements.push(formatTlv('15', String(params.unionpayPan).trim().slice(0, 31)));
     }
 
-    // Tag 16: UnionPay Reserved (31 chars) - Must match 15 if not separately provided
-    if (params.unionpayReserved && String(params.unionpayReserved).trim() !== '') {
-        elements.push(formatTlv('16', String(params.unionpayReserved).trim().slice(0, 31)));
-    } else if (params.unionpayPan && String(params.unionpayPan).trim() !== '') {
-        elements.push(formatTlv('16', String(params.unionpayPan).trim().slice(0, 31)));
+    // Tag 16: UnionPay Reserved (31 chars) - Matches Tag 15 as per DialogPay guide specification
+    const upRes = params.unionpayReserved || params.unionpayPan;
+    if (upRes && String(upRes).trim() !== '') {
+        elements.push(formatTlv('16', String(upRes).trim().slice(0, 31)));
     }
 
-    // Tag 26: Globally unique identifier data object / Merchant Account Info (Length: 32)
-    // Note: In LANKAQR/EMVCo, Tag 26 contains Sub-tag 00 (GUID).
+    // Tag 26: Globally unique identifier data object / Merchant Account Info (LANKAQR GUID)
     const rawGuid = params.merchantGuidAcquirerId || params.merchantAcquiringBankId;
     if (rawGuid && String(rawGuid).trim() !== '') {
-        const guidStr = String(rawGuid).trim();
-        let tag26Val = '';
-        if (guidStr.startsWith('00') && guidStr.length >= 30) {
-            tag26Val = guidStr;
-        } else {
-            // Wrap in Sub-tag 00
-            tag26Val = formatTlv('00', guidStr);
+        const tag26 = formatTag26Guid(rawGuid);
+        if (tag26) {
+            elements.push(tag26);
         }
-        elements.push(formatTlv('26', tag26Val));
     }
 
     // Tag 52: Merchant Category Code (MCC, 4 chars e.g. 5300)
@@ -132,25 +146,21 @@ export function generateEmvQrPayload(params) {
     const country = (params.merchantCountryCode || params.country || 'LK').toUpperCase().trim().slice(0, 2);
     elements.push(formatTlv('58', country));
 
-    // Tag 59: Merchant Name (Up to 25 chars)
-    const name = String(params.merchantName || params.tradingName || 'Genie Merchant').trim().slice(0, 25);
-    elements.push(formatTlv('59', name));
+    // Tag 59: Merchant Name (Up to 25 chars, sanitized)
+    const rawName = String(params.merchantName || params.tradingName || 'Genie Merchant').trim();
+    const cleanName = rawName.replace(/[^a-zA-Z0-9\s\-._]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 25);
+    elements.push(formatTlv('59', cleanName || 'Genie Merchant'));
 
-    // Tag 60: Merchant City (Up to 15 chars)
-    const city = String(params.merchantCity || 'Colombo').trim().slice(0, 15);
-    elements.push(formatTlv('60', city));
+    // Tag 60: Merchant City (Up to 15 chars, sanitized)
+    const rawCity = String(params.merchantCity || 'Colombo').trim();
+    const cleanCity = rawCity.replace(/[^a-zA-Z0-9\s\-._]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 15);
+    elements.push(formatTlv('60', cleanCity || 'Colombo'));
 
-    // Tag 62: Additional Data Field Template
-    // Sub-tag 05: Reference Label (Up to 25 chars)
-    const subTags62 = [];
-    const ref = params.referenceLabel ? String(params.referenceLabel).trim() : '00000000000';
-    subTags62.push(formatTlv('05', ref.slice(0, 25)));
-
-    if (params.qrTerminalId && String(params.qrTerminalId).trim() !== '') {
-        subTags62.push(formatTlv('07', String(params.qrTerminalId).trim().slice(0, 25)));
-    }
-
-    elements.push(formatTlv('62', subTags62.join('')));
+    // Tag 62: Additional Data Field Template (Strictly Sub-tag 05 Reference ONLY as per guide)
+    const rawRef = params.referenceLabel ? String(params.referenceLabel).trim() : '00000000000';
+    const cleanRef = rawRef.replace(/[^a-zA-Z0-9\-_.]/g, '').slice(0, 25) || '00000000000';
+    const tag62Sub05 = formatTlv('05', cleanRef);
+    elements.push(formatTlv('62', tag62Sub05));
 
     // Assemble payload without CRC and append '6304'
     const payloadWithoutCrc = elements.join('') + '6304';
@@ -272,4 +282,51 @@ export function parseEmvQrPayload(payload) {
     }
 
     return result;
+}
+
+/**
+ * Extract merchant parameters from any raw EMVCo / LANKAQR string.
+ *
+ * @param {string} rawQrString
+ * @returns {Object|null} Extracted merchant configuration
+ */
+export function parseStaticQrToMerchant(rawQrString) {
+    if (!rawQrString || typeof rawQrString !== 'string') return null;
+    const cleanStr = rawQrString.trim();
+    if (!cleanStr.startsWith('000201')) return null;
+
+    const tags = parseEmvQrPayload(cleanStr);
+    const tagMap = {};
+    for (const t of tags) {
+        tagMap[t.tag] = t;
+    }
+
+    const merchantData = {
+        pointOfInitiationMethod: tagMap['01'] ? tagMap['01'].value : '11',
+        visaPan: tagMap['02'] ? tagMap['02'].value : '',
+        visaReserved: tagMap['03'] ? tagMap['03'].value : '',
+        mastercardPan: tagMap['04'] ? tagMap['04'].value : '',
+        mastercardReserved: tagMap['05'] ? tagMap['05'].value : '',
+        unionpayPan: tagMap['15'] ? tagMap['15'].value : '',
+        unionpayReserved: tagMap['16'] ? tagMap['16'].value : '',
+        merchantGuidAcquirerId: tagMap['26'] ? tagMap['26'].value : '',
+        merchantMccCode: tagMap['52'] ? tagMap['52'].value : '5300',
+        trxCurrencyCode: tagMap['53'] ? tagMap['53'].value : '144',
+        amount: tagMap['54'] ? tagMap['54'].value : '',
+        merchantCountryCode: tagMap['58'] ? tagMap['58'].value : 'LK',
+        merchantName: tagMap['59'] ? tagMap['59'].value : '',
+        merchantCity: tagMap['60'] ? tagMap['60'].value : '',
+        referenceLabel: '',
+        qrTerminalId: '',
+    };
+
+    // Parse Tag 62 subtags
+    if (tagMap['62'] && tagMap['62'].subTags) {
+        for (const sub of tagMap['62'].subTags) {
+            if (sub.tag === '05') merchantData.referenceLabel = sub.value;
+            if (sub.tag === '07') merchantData.qrTerminalId = sub.value;
+        }
+    }
+
+    return merchantData;
 }

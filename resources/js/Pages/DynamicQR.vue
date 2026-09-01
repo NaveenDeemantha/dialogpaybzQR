@@ -200,10 +200,36 @@
           <!-- Standee Header -->
           <div class="w-full pb-2 border-b flex justify-between items-center" :class="isDark ? 'border-zinc-800 text-zinc-400' : 'border-zinc-100 text-zinc-500'">
             <div class="flex items-center gap-1.5">
-              <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span class="text-[10px] font-mono uppercase tracking-widest font-semibold">Ready to Scan</span>
+              <span class="h-2 w-2 rounded-full" :class="hasPaymentRails ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
+              <span class="text-[10px] font-mono uppercase tracking-widest font-semibold">
+                {{ form.environment === 'live' ? 'LIVE PRODUCTION QR' : 'SANDBOX / UAT QR' }}
+              </span>
             </div>
             <span class="text-[10px] font-mono uppercase font-bold text-zinc-400">LANKAQR</span>
+          </div>
+
+          <!-- Live Mode Sandbox Mock Warning Banner -->
+          <div v-if="form.environment === 'live' && isUsingSandboxMockData" 
+            class="w-full mt-1.5 p-2 rounded-lg text-left text-[11px] leading-tight border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
+            <div class="font-semibold flex items-center gap-1">
+              <span>⚠️</span>
+              <span>Live Mode using Sandbox Mock Data</span>
+            </div>
+            <p class="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+              Live banking apps will reject sandbox test IDs as "Invalid QR". Open <button type="button" @click="showSettingsDrawer = true" class="underline font-semibold text-amber-600 dark:text-amber-300">API Config</button> to fetch your live merchant details.
+            </p>
+          </div>
+
+          <!-- Missing Payment Rails Alert -->
+          <div v-if="!hasPaymentRails" 
+            class="w-full mt-1.5 p-2 rounded-lg text-left text-[11px] leading-tight border bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400">
+            <div class="font-semibold flex items-center gap-1">
+              <span>🚨</span>
+              <span>No Merchant Account / PAN Found</span>
+            </div>
+            <p class="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+              This QR code has no payment rail (Visa/Mastercard/GUID) and cannot be scanned. Configure your merchant details in API Config.
+            </p>
           </div>
 
           <!-- Merchant Title -->
@@ -219,8 +245,8 @@
             <qrcode-vue
               ref="qrCodeRef"
               :value="qrPayload"
-              :size="190"
-              :margin="2"
+              :size="210"
+              :margin="3"
               level="M"
               render-as="canvas"
             />
@@ -239,13 +265,13 @@
 
           <!-- Payment Rails Strip -->
           <div class="w-full text-[10px] font-mono text-zinc-400 flex items-center justify-center gap-2">
-            <span>VISA</span>
+            <span :class="merchant.visaPan ? 'text-emerald-500 font-semibold' : 'text-zinc-400'">VISA</span>
             <span>•</span>
-            <span>MASTERCARD</span>
+            <span :class="merchant.mastercardPan ? 'text-emerald-500 font-semibold' : 'text-zinc-400'">MASTERCARD</span>
             <span>•</span>
-            <span>LANKAQR</span>
+            <span :class="merchant.merchantGuidAcquirerId ? 'text-emerald-500 font-semibold' : 'text-zinc-400'">LANKAQR</span>
             <span>•</span>
-            <span>UNIONPAY</span>
+            <span :class="merchant.unionpayPan ? 'text-emerald-500 font-semibold' : 'text-zinc-400'">UNIONPAY</span>
           </div>
 
           <!-- Standee Action Buttons -->
@@ -416,6 +442,34 @@
             </button>
           </div>
 
+          <!-- Import / Paste Existing Static QR String -->
+          <div class="pt-4 border-t space-y-2" :class="isDark ? 'border-zinc-800' : 'border-zinc-100'">
+            <div class="flex items-center justify-between">
+              <div class="text-xs font-semibold text-zinc-400 uppercase">Or Import Official Static QR</div>
+              <span class="text-[10px] text-zinc-500 font-mono">From Standee / Portal</span>
+            </div>
+            <div class="flex gap-2">
+              <input 
+                type="text" 
+                v-model="rawStaticQrInput" 
+                placeholder="Paste raw QR string e.g. 000201010211..." 
+                :class="isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'"
+                class="flex-1 border rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none"
+              />
+              <button 
+                type="button" 
+                @click="importStaticQrString" 
+                :disabled="!rawStaticQrInput"
+                :class="isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-zinc-800 hover:bg-zinc-900 text-white'"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40 transition">
+                Import
+              </button>
+            </div>
+            <p class="text-[10px] text-zinc-500">
+              Paste your approved DialogPay/LankaQR merchant QR payload to automatically extract your live production parameters.
+            </p>
+          </div>
+
           <!-- Merchant manual fields -->
           <div class="pt-4 border-t space-y-3" :class="isDark ? 'border-zinc-800' : 'border-zinc-100'">
             <div class="text-xs font-semibold text-zinc-400 uppercase">Merchant Overrides</div>
@@ -450,10 +504,10 @@
           <div class="pt-4 border-t flex justify-end" :class="isDark ? 'border-zinc-800' : 'border-zinc-100'">
             <button 
               type="button" 
-              @click="showSettingsDrawer = false" 
+              @click="closeAndSaveSettings" 
               :class="isDark ? 'bg-white text-black' : 'bg-zinc-900 text-white'"
               class="py-2 px-5 rounded-lg text-xs font-medium">
-              Done
+              Save & Done
             </button>
           </div>
 
@@ -469,7 +523,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import QrcodeVue from 'qrcode.vue';
 import axios from 'axios';
-import { generateEmvQrPayload } from '@/Utils/emvQrGenerator';
+import { generateEmvQrPayload, parseStaticQrToMerchant } from '@/Utils/emvQrGenerator';
 
 const props = defineProps({
   defaultEnvironment: {
@@ -534,7 +588,22 @@ const merchant = reactive({
   qrTerminalId: '',
 });
 
-// Transaction state: DEFAULT AMOUNT IS 10.00, DEFAULT POI IS '11'
+// Detect whether current merchant is using the UAT sandbox mock sample
+const isUsingSandboxMockData = computed(() => {
+  return merchant.visaPan === '4325511220026799' || merchant.merchantGuidAcquirerId === '00281699500162022121311121661165';
+});
+
+// Check if at least one payment rail is present
+const hasPaymentRails = computed(() => {
+  return Boolean(
+    (merchant.visaPan && merchant.visaPan.trim()) ||
+    (merchant.mastercardPan && merchant.mastercardPan.trim()) ||
+    (merchant.unionpayPan && merchant.unionpayPan.trim()) ||
+    (merchant.merchantGuidAcquirerId && merchant.merchantGuidAcquirerId.trim())
+  );
+});
+
+// Transaction state: DEFAULT AMOUNT IS 10.00, DEFAULT POI IS '11' (DialogPay standard)
 const transaction = reactive({
   amount: '10.00',
   referenceLabel: 'INV-' + Math.floor(100000 + Math.random() * 900000),
@@ -589,15 +658,60 @@ const qrData = computed(() => {
 const qrPayload = computed(() => qrData.value.payload);
 const decodedTags = computed(() => qrData.value.decodedTags);
 
+// Helper to load merchant profile from storage or fallback
+function loadMerchantForEnvironment(env) {
+  const stored = localStorage.getItem(`genie_merchant_${env}`);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      Object.assign(merchant, parsed);
+      return true;
+    } catch (e) {
+      console.error('Failed to parse cached merchant profile', e);
+    }
+  }
+
+  if (env === 'uat') {
+    loadSampleDemo(false);
+  } else {
+    // Live defaults if not yet configured
+    merchant.merchantName = '';
+    merchant.merchantCity = 'Colombo';
+    merchant.merchantCountryCode = 'LK';
+    merchant.merchantMccCode = '5300';
+    merchant.trxCurrencyCode = '144';
+    merchant.visaPan = '';
+    merchant.mastercardPan = '';
+    merchant.unionpayPan = '';
+    merchant.merchantGuidAcquirerId = '';
+    merchant.qrTerminalId = '';
+    merchant.synced = false;
+  }
+  return false;
+}
+
 // Methods
 function switchEnvironment(env) {
   form.environment = env;
   const savedKey = localStorage.getItem(`genie_apiKey_${env}`);
   const savedAppId = localStorage.getItem(`genie_appId_${env}`);
   if (savedKey) form.apiKey = savedKey;
+  else form.apiKey = '';
   if (savedAppId) form.appId = savedAppId;
+  else form.appId = '';
 
-  notify(`Switched to ${env.toUpperCase()} environment`, 'success');
+  const loaded = loadMerchantForEnvironment(env);
+
+  if (env === 'live') {
+    if (!loaded && !form.apiKey) {
+      notify('Switched to LIVE. Please configure your Live API Key or Merchant PANs to scan live.', 'error');
+      showSettingsDrawer.value = true;
+    } else {
+      notify(`Switched to LIVE environment`, 'success');
+    }
+  } else {
+    notify(`Switched to UAT Sandbox environment`, 'success');
+  }
 }
 
 function addAmount(val) {
@@ -615,7 +729,7 @@ function notify(msg, type = 'success') {
   notification.show = true;
   setTimeout(() => {
     notification.show = false;
-  }, 4000);
+  }, 5000);
 }
 
 // Fetch merchant details from backend proxy
@@ -640,19 +754,41 @@ async function fetchCompanyDetails() {
       localStorage.setItem(`genie_apiKey_${form.environment}`, form.apiKey);
       if (form.appId) localStorage.setItem(`genie_appId_${form.environment}`, form.appId);
 
-      const staticQr = data.staticQrDetails || {};
+      // Support various response structures from Genie Business API
+      const staticQr = data.staticQrDetails || data.qrDetails || data.staticQRDetails || data.merchantQrDetails || data.qr || {};
 
-      merchant.merchantName = staticQr.merchantName || data.tradingName || data.registeredName || 'Genie Merchant';
-      merchant.merchantCity = staticQr.merchantCity || (data.tradingAddress && data.tradingAddress.town) || 'Colombo';
-      merchant.merchantCountryCode = staticQr.merchantCountryCode || data.country || 'LK';
-      merchant.merchantMccCode = staticQr.merchantMccCode || '5300';
-      merchant.trxCurrencyCode = staticQr.trxCurrencyCode || '144';
-      merchant.visaPan = staticQr.visaPan || '';
-      merchant.mastercardPan = staticQr.mastercardPan || '';
-      merchant.unionpayPan = staticQr.unionpayPan || '';
-      merchant.merchantGuidAcquirerId = staticQr.merchantGuidAcquirerId || staticQr.merchantAcquiringBankId || '';
-      merchant.qrTerminalId = staticQr.qrTerminalId || '';
+      // If API returned a raw QR payload string, extract all parameters from it
+      const rawString = (typeof data === 'string' && data.startsWith('000201')) ? data
+        : (data.staticQr && typeof data.staticQr === 'string' && data.staticQr.startsWith('000201')) ? data.staticQr
+        : (data.staticQrString && typeof data.staticQrString === 'string' && data.staticQrString.startsWith('000201')) ? data.staticQrString
+        : (data.qrString && typeof data.qrString === 'string' && data.qrString.startsWith('000201')) ? data.qrString
+        : (staticQr.qrString && typeof staticQr.qrString === 'string' && staticQr.qrString.startsWith('000201')) ? staticQr.qrString
+        : null;
+
+      if (rawString) {
+        const parsed = parseStaticQrToMerchant(rawString);
+        if (parsed) {
+          Object.assign(merchant, parsed);
+        }
+      } else {
+        merchant.merchantName = staticQr.merchantName || data.tradingName || data.registeredName || data.businessName || data.name || 'Genie Merchant';
+        merchant.merchantCity = staticQr.merchantCity || (data.tradingAddress && (data.tradingAddress.town || data.tradingAddress.city)) || (data.registeredAddress && data.registeredAddress.town) || 'Colombo';
+        merchant.merchantCountryCode = staticQr.merchantCountryCode || data.countryCode || data.country || 'LK';
+        merchant.merchantMccCode = staticQr.merchantMccCode || data.mcc || data.mccCode || '5300';
+        merchant.trxCurrencyCode = staticQr.trxCurrencyCode || data.currency || '144';
+        merchant.visaPan = staticQr.visaPan || staticQr.visa_pan || data.visaPan || '';
+        merchant.visaReserved = staticQr.visaReserved || staticQr.visa_reserved || data.visaReserved || '';
+        merchant.mastercardPan = staticQr.mastercardPan || staticQr.mastercard_pan || data.mastercardPan || '';
+        merchant.mastercardReserved = staticQr.mastercardReserved || staticQr.mastercard_reserved || data.mastercardReserved || '';
+        merchant.unionpayPan = staticQr.unionpayPan || staticQr.unionpay_pan || data.unionpayPan || '';
+        merchant.unionpayReserved = staticQr.unionpayReserved || staticQr.unionpay_reserved || data.unionpayReserved || '';
+        merchant.merchantGuidAcquirerId = staticQr.merchantGuidAcquirerId || staticQr.merchantAcquiringBankId || data.merchantGuidAcquirerId || data.merchantAcquiringBankId || data.guid || '';
+        merchant.qrTerminalId = staticQr.qrTerminalId || staticQr.terminalId || data.terminalId || '';
+      }
       merchant.synced = true;
+
+      // Save profile for this environment
+      localStorage.setItem(`genie_merchant_${form.environment}`, JSON.stringify(merchant));
 
       showSettingsDrawer.value = false;
       notify(`Loaded merchant "${merchant.merchantName}" from ${form.environment.toUpperCase()} API`, 'success');
@@ -667,8 +803,52 @@ async function fetchCompanyDetails() {
   }
 }
 
+// Save settings and close modal
+function closeAndSaveSettings() {
+  localStorage.setItem(`genie_merchant_${form.environment}`, JSON.stringify(merchant));
+  if (form.apiKey) localStorage.setItem(`genie_apiKey_${form.environment}`, form.apiKey);
+  if (form.appId) localStorage.setItem(`genie_appId_${form.environment}`, form.appId);
+  showSettingsDrawer.value = false;
+  notify('Saved configuration settings', 'success');
+}
+
+const rawStaticQrInput = ref('');
+
+// Import merchant parameters from raw static QR string
+function importStaticQrString() {
+  if (!rawStaticQrInput.value) return;
+
+  const parsed = parseStaticQrToMerchant(rawStaticQrInput.value);
+  if (!parsed) {
+    notify('Invalid EMVCo QR string. Must start with 000201...', 'error');
+    return;
+  }
+
+  merchant.merchantName = parsed.merchantName || merchant.merchantName;
+  merchant.merchantCity = parsed.merchantCity || merchant.merchantCity;
+  merchant.merchantCountryCode = parsed.merchantCountryCode || 'LK';
+  merchant.merchantMccCode = parsed.merchantMccCode || '5300';
+  merchant.trxCurrencyCode = parsed.trxCurrencyCode || '144';
+  merchant.visaPan = parsed.visaPan || '';
+  merchant.visaReserved = parsed.visaReserved || '';
+  merchant.mastercardPan = parsed.mastercardPan || '';
+  merchant.mastercardReserved = parsed.mastercardReserved || '';
+  merchant.unionpayPan = parsed.unionpayPan || '';
+  merchant.unionpayReserved = parsed.unionpayReserved || '';
+  merchant.merchantGuidAcquirerId = parsed.merchantGuidAcquirerId || '';
+  merchant.qrTerminalId = parsed.qrTerminalId || '';
+  merchant.synced = true;
+
+  // Persist for current environment
+  localStorage.setItem(`genie_merchant_${form.environment}`, JSON.stringify(merchant));
+  
+  rawStaticQrInput.value = '';
+  showSettingsDrawer.value = false;
+  notify(`Successfully imported merchant parameters for "${merchant.merchantName}"!`, 'success');
+}
+
 // Load sample demo merchant
-function loadSampleDemo() {
+function loadSampleDemo(showToast = true) {
   merchant.merchantName = 'Genie Integrations';
   merchant.merchantCity = 'Colombo 03';
   merchant.merchantCountryCode = 'LK';
@@ -681,9 +861,15 @@ function loadSampleDemo() {
   merchant.qrTerminalId = '';
   merchant.synced = true;
   transaction.amount = '10.00';
-  transaction.referenceLabel = 'INV-10023';
-  showSettingsDrawer.value = false;
-  notify('Loaded sample merchant parameters from official DialogPay specification', 'success');
+  transaction.referenceLabel = 'INV-' + Math.floor(100000 + Math.random() * 900000);
+  transaction.poiMode = '11';
+  
+  localStorage.setItem('genie_merchant_uat', JSON.stringify(merchant));
+  
+  if (showToast) {
+    showSettingsDrawer.value = false;
+    notify('Loaded sample merchant parameters from official DialogPay specification', 'success');
+  }
 }
 
 // Copy EMVCo Payload
@@ -724,6 +910,8 @@ onMounted(() => {
   const savedAppId = localStorage.getItem(`genie_appId_${form.environment}`);
   if (savedKey) form.apiKey = savedKey;
   if (savedAppId) form.appId = savedAppId;
+
+  loadMerchantForEnvironment(form.environment);
 });
 </script>
 
