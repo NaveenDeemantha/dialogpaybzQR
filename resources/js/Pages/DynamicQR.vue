@@ -1080,9 +1080,14 @@ onMounted(() => {
 @media print {
   @page {
     margin: 8mm;
-    size: auto;
+    size: portrait;
   }
-  body {
+  html, body {
+    height: 100% !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
     background: #ffffff !important;
   }
   body * {
@@ -1094,43 +1099,50 @@ onMounted(() => {
     print-color-adjust: exact !important;
   }
   #printableQrStandee {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 90% !important;
-    max-width: 540px !important;
-    padding: 32px 28px !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 420px !important;
+    max-width: 90% !important;
+    margin: 15px auto !important;
+    padding: 22px 22px 16px 22px !important;
     background: #ffffff !important;
     color: #18181b !important;
-    border: 3px solid #18181b !important;
-    border-radius: 28px !important;
+    border: 2px solid #18181b !important;
+    border-radius: 22px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     box-shadow: none !important;
-    gap: 12px !important;
   }
   #printableQrStandee h2 {
-    font-size: 24px !important;
+    font-size: 20px !important;
     color: #09090b !important;
     margin-bottom: 2px !important;
     max-width: 100% !important;
+    font-weight: 800 !important;
   }
   #printableQrStandee p {
-    font-size: 13px !important;
+    font-size: 11px !important;
     color: #52525b !important;
   }
   #printableQrStandee canvas {
-    width: 270px !important;
-    height: 270px !important;
+    width: 210px !important;
+    height: 210px !important;
     display: block !important;
-    margin: 0 auto !important;
+    margin: 4px auto !important;
   }
   #printableQrStandee .text-xl, #printableQrStandee .text-2xl {
-    font-size: 32px !important;
+    font-size: 26px !important;
     color: #09090b !important;
     font-weight: 900 !important;
   }
   #printableQrStandee span {
-    font-size: 11px !important;
+    font-size: 10px !important;
   }
 }
 </style>
