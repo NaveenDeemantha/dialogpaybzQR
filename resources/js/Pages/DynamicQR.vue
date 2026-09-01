@@ -1079,67 +1079,83 @@ onMounted(() => {
 <style>
 @media print {
   @page {
-    margin: 8mm;
+    margin: 10mm;
     size: portrait;
   }
+  /* Remove outer app containers from print document flow */
+  header, footer, button, input, .lg\:col-span-3, .lg\:col-span-5, [role="alert"] {
+    display: none !important;
+  }
   html, body {
-    height: 100% !important;
-    max-height: 100vh !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
     background: #ffffff !important;
+    overflow: visible !important;
   }
-  body * {
-    visibility: hidden;
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
   }
-  #printableQrStandee, #printableQrStandee * {
-    visibility: visible;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  .grid {
+    display: block !important;
+  }
+  .lg\:col-span-4 {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    background: transparent !important;
   }
   #printableQrStandee {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    transform: none !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    justify-content: space-between !important;
-    width: 420px !important;
+    justify-content: center !important;
+    width: 380px !important;
     max-width: 90% !important;
-    margin: 15px auto !important;
-    padding: 22px 22px 16px 22px !important;
+    margin: 10px auto !important;
+    padding: 24px 20px 18px 20px !important;
     background: #ffffff !important;
     color: #18181b !important;
     border: 2px solid #18181b !important;
-    border-radius: 22px !important;
+    border-radius: 24px !important;
+    box-shadow: none !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    box-shadow: none !important;
+  }
+  #printableQrStandee * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   #printableQrStandee h2 {
     font-size: 20px !important;
-    color: #09090b !important;
-    margin-bottom: 2px !important;
-    max-width: 100% !important;
     font-weight: 800 !important;
+    color: #09090b !important;
+    margin: 2px 0 !important;
   }
   #printableQrStandee p {
     font-size: 11px !important;
-    color: #52525b !important;
+    color: #71717a !important;
   }
   #printableQrStandee canvas {
-    width: 210px !important;
-    height: 210px !important;
+    width: 200px !important;
+    height: 200px !important;
     display: block !important;
-    margin: 4px auto !important;
+    margin: 6px auto !important;
   }
   #printableQrStandee .text-xl, #printableQrStandee .text-2xl {
     font-size: 26px !important;
-    color: #09090b !important;
     font-weight: 900 !important;
+    color: #09090b !important;
   }
   #printableQrStandee span {
     font-size: 10px !important;
